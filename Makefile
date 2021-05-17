@@ -1,9 +1,9 @@
-all: main.o binRead.o
-	gcc main.o binRead.o -o program
+all: main.o livrariax.o
+	gcc main.o livrariax.o -o program
 main.o: main.c
 	gcc main.c -c
-binRead.o: binRead.c
-	gcc binRead.c -c
+livrariax.o: livrariax.c
+	gcc livrariax.c -c
 run:
 	./program
 clean:
