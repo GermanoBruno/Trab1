@@ -1,9 +1,11 @@
-all: main.o livrariax.o
-	gcc main.o livrariax.o -o program
+all: main.o veiculos.o linhas.o
+	gcc main.o veiculos.o linhas.o -o program
 main.o: main.c
 	gcc main.c -c
-livrariax.o: livrariax.c
-	gcc livrariax.c -c
+veiculos.o: veiculos.c
+	gcc veiculos.c -c
+linhas.o: linhas.c
+	gcc linhas.c -c
 run:
 	./program
 clean:
