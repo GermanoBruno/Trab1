@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "linhas.h"
+#include "veiculos.h"
+
 
 int main(int argc, char const *argv[])
 {
