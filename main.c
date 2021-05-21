@@ -3,33 +3,32 @@
 #include <stdlib.h>
 #include "veiculo.h"
 
-#define tamcampos 164
+#define tamveiculos 2
 
 int main(void) {
 
 	FILE *fp, *binario;
-	char *linha = (char*)malloc(sizeof(char)*tamcampos);
+	header* h = createHeader();
 	
 	fp = fopen("veiculo.csv", "r");
+	descreveHeader(h, fp);
 	binario = fopen("veiculo.bin", "wb");
-	
-	fread(linha, sizeof(char), tamcampos, fp);
+	setHeader(h, binario);
 	
 	int i = 0;
-	while (i < 934) {
+	while (i < tamveiculos) { 	// Fazer função pra ler até o fim do arquivo depois
 		
 		veiculo* v = create();
 		leitura(fp, v);
-		escrita(v, binario);
+		atualizaBinario(h, v, binario);
 		libera(v);
 		i++;
 
 	}
-
-	binarioNaTela("veiculo.bin");
+	
+	//binarioNaTela("veiculo.bin");
 	//imprime(v);
 	
-	free(linha);
 	fclose(fp);
 	fclose(binario);
 
