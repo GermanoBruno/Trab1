@@ -4,11 +4,15 @@
 typedef struct Header header;
 typedef struct Veiculo veiculo;
 
+header* createHeader();
+void descreveHeader(header* h, FILE* fp);
+void setHeader(header* h, FILE* binario);
 veiculo* create();
 int leitura (FILE* fp, veiculo* v);
-void escrita (veiculo* v, FILE* binario);
+int escrita (veiculo* v, char removido, int byteProxReg, FILE* binario);
+void atualizaBinario(header* h, veiculo* v, FILE* binario);
 void imprime (veiculo* v);
-void libera(veiculo* v);
+void libera (veiculo* v);
 void binarioNaTela(char *nomeArquivoBinario);
 
 
