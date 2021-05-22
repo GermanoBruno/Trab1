@@ -3,14 +3,15 @@
 #include <stdlib.h>
 #include "veiculo.h"
 
-#define tamveiculos 2
+#define tamveiculos 1
 
 int main(void) {
 
 	FILE *fp, *binario;
 	header* h = createHeader();
 	
-	fp = fopen("veiculo.csv", "r");
+	//fp = fopen("veiculo.csv", "r");
+	fp = fopen("teste.csv", "r");
 	descreveHeader(h, fp);
 	binario = fopen("veiculo.bin", "wb");
 	setHeader(h, binario);
