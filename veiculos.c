@@ -54,13 +54,13 @@ void descreveHeader(header* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descreveModelo);
 	fscanf(fp, "%[^\n]\n", h->descreveCategoria);
 	
-/*	printf("%s\n", h->descrevePrefixo);
-	printf("%s\n", h->descreveData);
-	printf("%s\n", h->descreveLugares);
-	printf("%s\n", h->descreveLinha);
-	printf("%s\n", h->descreveModelo);
-	printf("%s\n", h->descreveCategoria);
-*/
+	/*	printf("%s\n", h->descrevePrefixo);
+		printf("%s\n", h->descreveData);
+		printf("%s\n", h->descreveLugares);
+		printf("%s\n", h->descreveLinha);
+		printf("%s\n", h->descreveModelo);
+		printf("%s\n", h->descreveCategoria);
+	*/
 
 }
 
@@ -102,36 +102,73 @@ int leitura (FILE* fp, veiculo* v) {
 
 int escrita (veiculo* v, char removido, int byteProxReg, FILE* binario) {
 
-	int tamodelo = strlen(v->modelo);
+	int tamodelo, flag = 0;
 	int tamcategoria = strlen(v->categoria);
-	int tam = 23 + tamodelo + tamcategoria;
+	int tam = 31 + tamcategoria;
+
+	if (strcmp(v->modelo, "NULO") == 0) {
+		flag = 1;
+	} 
+	else {
+		tamodelo = strlen(v->modelo);
+		tam += tamodelo;
+	}
 
 	fseek(binario, byteProxReg, SEEK_SET);
 
 	fwrite(&(removido), sizeof(char), 1, binario);
 	fwrite(&(tam), sizeof(int), 1, binario);
 	fwrite(v->prefixo, sizeof(char), strlen(v->prefixo), binario);
-	fwrite(v->data, sizeof(char), strlen(v->data), binario);
+
+	if (v->data[0] == 'N') {
+
+		char lixo = '@';
+		for (int i = 0; i < 10; i++) {
+			fwrite(&lixo, sizeof(char), 1, binario); 
+		}
+
+	} else {
+		fwrite(v->data, sizeof(char), strlen(v->data), binario); 
+	}
+	
 	fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
-	fwrite(&(v->codLinha), sizeof(int), 1, binario);
-	fwrite(&(tamodelo), sizeof(int), 1, binario);
-	fwrite(v->modelo, sizeof(char), strlen(v->modelo), binario);
+	
+	
+	if (v->codLinha == 0){
+
+		int lixo = -1;
+		fwrite(&lixo, sizeof(int), 1, binario);
+
+	} else {
+		fwrite(&(v->codLinha), sizeof(int), 1, binario); 
+	}
+	
+	
+	if (flag == 1) {
+
+		int tam = 0;
+		fwrite(&tam, sizeof(int), 1, binario);
+
+	} else {
+
+		fwrite(&(tamodelo), sizeof(int), 1, binario);  
+		fwrite(v->modelo, sizeof(char), tamodelo, binario); 
+
+	}
+	
+	
 	fwrite(&(tamcategoria), sizeof(int), 1, binario);
-	fwrite(v->categoria, sizeof(char), strlen(v->categoria), binario);
-	int total = 13 + tam;
+	fwrite(v->categoria, sizeof(char), tamcategoria, binario);
+	int total = tam + 5;
 
 	return total;
 }
 
-// LEMBRAR DE CRIAR FUNCAO PARA ATUALIZAR O STATUS
 
 void atualizaBinario(header* h, veiculo* v, FILE* binario) {
 
-	// -----------FALTA ESCREVER AS MUDANÇAS NO HEADER -------------
-
 	int tam;
 	char removido;
-	//int tam = 23 + tamodelo + tamcategoria; // LEMBRAR QUE O DEFINITIVO É COM CAMPOS NULOS
 
 	if (v->prefixo[0] == '*') {
 		
@@ -148,6 +185,12 @@ void atualizaBinario(header* h, veiculo* v, FILE* binario) {
 	tam = escrita(v, removido, h->byteProxReg, binario);
 
 	h->byteProxReg = h->byteProxReg + tam;
+	//printf("%ld\n", h->byteProxReg);
+	
+	fseek(binario, 1, SEEK_SET);
+	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
+	fwrite(&(h->nroRegistros), sizeof(int), 1, binario);
+	fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
 
 }
 
