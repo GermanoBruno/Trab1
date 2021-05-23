@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "veiculo.h"
 
-#define tamveiculos 1
+#define tamveiculos 2
 
 int main(void) {
 
@@ -13,7 +13,7 @@ int main(void) {
 	//fp = fopen("veiculo.csv", "r");
 	fp = fopen("teste.csv", "r");
 	descreveHeader(h, fp);
-	binario = fopen("veiculo.bin", "wb");
+	binario = fopen("veiculo.bin", "w+b");
 	setHeader(h, binario);
 	
 	int i = 0;
@@ -26,6 +26,9 @@ int main(void) {
 		i++;
 
 	}
+	atualizaHeader(h, binario);
+
+	busca(binario, "DN020", tamveiculos);
 	
 	//binarioNaTela("veiculo.bin");
 	//imprime(v);
