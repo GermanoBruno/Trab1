@@ -8,10 +8,10 @@
 		long int byteProxReg;			//  8 bytes
 		int 	 nroRegistros; 			//  4 bytes
 		int 	 nroRegistrosRemovidos;	//  4 bytes
-		char 	 descreveCodigo[15];	// 15 bytes
-		char 	 descreveCartao[13];	// 13 bytes
-		char 	 descreveNome[13];		// 13 bytes
-		char 	 descreveCor[24]; 		// 24 bytes
+		char 	 descreveCodigo[16];	// 15 bytes
+		char 	 descreveCartao[14];	// 13 bytes
+		char 	 descreveNome[14];		// 13 bytes
+		char 	 descreveCor[25]; 		// 24 bytes
 	};
 
 	void criarHeaderLinha(){
@@ -85,8 +85,7 @@
 		// Nome da linha, 
 		// Cor que descreve a linha
 
-		// TODO Ver como lê os outros nulos
-
+		// ver se precisa collocar 4 pra ler o \0
 		char codigoLinhaNaoTratado[3];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
@@ -103,13 +102,34 @@
 			reg->codLinha = atoi(codigoLinhaNaoTratado);
 		}
 
-		char* 
+		char* aceitaCartaoNaoTratado;
 		char* nomeLinhaNaoTratado;
 		char* corLinhaNaoTratado;
+		char  nulo[] = 'NULO'
 
-		fscanf(fp, "%[^,],",  reg->aceitaCartao);
-		fscanf(fp, "%m[^,],", reg->nomeLinha);
-		fscanf(fp, "%m[^,],", reg->corLinha);
+		fscanf(fp, "%m[^,],", aceitaCartaoNaoTratado);
+		fscanf(fp, "%m[^,],", nomeLinhaNaoTratado);
+		fscanf(fp, "%m[^,],", corLinhaNaoTratado);
+
+		// Identificação de valores nulos 
+		if(strcmp(aceitaCartaoNaoTratado, nulo)){
+			reg->aceitaCartao = '\0';
+		}else{
+			strcpy(reg->aceitaCartao, aceitaCartaoNaoTratado);
+		}		
+
+		if(strcmp(nomeLinhaNaoTratado, nulo)){
+			reg->nomeLinha = '\0';
+		}else{
+			strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
+		}
+
+		if(strcmp(corLinhaNaoTratado, nulo)){
+			reg->corLinha = '\0';
+		}else{
+			strcpy(reg->corLinha, nomeLinhaNaoTratado);
+		}
+
 
 		return 1;	
 	}
@@ -157,7 +177,6 @@
 		char* corLinha; 		// variavel
 	};
 
-	// AINDA NÃO TERMINEI A PARTIR DAQUI
 	void imprimeRegistroLinha(RegistroLinha* reg){
 		/*
 			Nome da linha: campo com valor nulo
@@ -166,42 +185,41 @@
 			--- pule uma linha em branco ---
 		*/
 
-		// TODO verificar quando dado é nulo
 		if(reg->removido = '1'){
 			printf("Registro inexistente.\n");
 			return;
 		}
 		printf("Nome da linha: \n");
-		if(LINHA NULA){
+		if(reg->tamanhoNome = 0){
 			printf("campo com valor nulo\n");
 		}else{
 			printf("%s\n", reg->nomeLinha);
 		}
 		printf("Cor que descreve a linha: \n");
-		if(COR NULA){
+		if(reg->tamanhoCor = 0){
 			printf("campo com valor nulo\n");
 		}else{
 			printf("%s\n", reg->corLinha);
 		}
 		printf("Aceita cartao: \n");
-		if(CARTAO NULA){
-			printf("campo com valor nulo\n");
-		}else{
-			switch(reg->aceitaCartao){
-				case 'S':
-					printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
-					break;
-				case 'N':
-					printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
-					break;
-				case 'F':
-					printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
-					break;
-			}
+		switch(reg->aceitaCartao){
+			case 'S':
+				printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
+				break;
+			case 'N':
+				printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
+				break;
+			case 'F':
+				printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
+				break;
+			case '\0':
+				printf("campo com valor nulo\n");
+				break;
 		}
 		printf("\n");
 	}
 
+	// AINDA NÃO TERMINEI A PARTIR DAQUI
 
 	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
 		// Retorna o tamanho total do registro
