@@ -223,37 +223,33 @@
 		char* corLinha; 		// variavel
 	};
 
-	// AINDA NÃO TERMINEI A PARTIR DAQUI
 
 	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
 		// Retorna o tamanho total do registro
 		// TODO
 
-		// removido
+		// Escrita dos dados já formatados (tamanhos fixos)
 		fwrite(&(reg->removido), sizeof(char), 1, fp);
-		// tamanho registro
 		fwrite(&(reg->tamanhoRegistro), sizeof(int), 1, fp);
-		// codlinha
 		fwrite(&(reg->codLinha), sizeof(int),  1, fp);
-		// aceita cartao
 		fwrite(&(reg->aceitaCartao), sizeof(char), 0, fp);
 
-
-		// tamanho nome
+		// escrita dos dados de tamanho variável
 		fwrite(&(reg->tamanhoNome), sizeof(int),  1, fp);
 		if(reg->tamanhoNome != 0){
 			// nomelinha
 			fwrite(&(reg->nomeLinha), sizeof(char), reg->tamanhoNome, fp);
 		}
-
-		// tamanho cor
 		fwrite(&(reg->tamanhoCor), sizeof(int),  1, fp);
 		if(reg->tamanhoCor != 0){
 			// corlinha
 			fwrite(&(reg->corLinha), sizeof(char), reg->tamanhoCor, fp);
 		}
+
+		return reg->tamanhoRegistro;
 	}
 
+	// AINDA NÃO TERMINEI A PARTIR DAQUI
 	void buscaRegistroLinha(){
 		
 	}
@@ -261,70 +257,6 @@
 	//////////////////////////////////////////////////////////////////////////
 	///// Escrita e busca tão copiados do veiculos pra referencia rapida /////
 	//////////////////////////////////////////////////////////////////////////
-
-	int escrita (veiculo* v, char removido, int byteProxReg, FILE* binario) {
-
-		int tamodelo, flag = 0;
-		int tamcategoria = strlen(v->categoria);
-		int tam = 31 + tamcategoria;
-
-		if (strcmp(v->modelo, "NULO") == 0) {
-			flag = 1;
-		} 
-		else {
-			tamodelo = strlen(v->modelo);
-			tam += tamodelo;
-		}
-
-		fseek(binario, byteProxReg, SEEK_SET);
-
-		fwrite(&(removido), sizeof(char), 1, binario);
-		fwrite(&(tam), sizeof(int), 1, binario);
-		fwrite(v->prefixo, sizeof(char), strlen(v->prefixo), binario);
-
-		if (v->data[0] == 'N') {
-
-			char lixo = '@';
-			for (int i = 0; i < 10; i++) {
-				fwrite(&lixo, sizeof(char), 1, binario); 
-			}
-
-		} else {
-			fwrite(v->data, sizeof(char), strlen(v->data), binario); 
-		}
-		
-		fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
-		
-		
-		if (v->codLinha == 0){
-
-			int lixo = -1;
-			fwrite(&lixo, sizeof(int), 1, binario);
-
-		} else {
-			fwrite(&(v->codLinha), sizeof(int), 1, binario); 
-		}
-		
-		
-		if (flag == 1) {
-
-			int tam = 0;
-			fwrite(&tam, sizeof(int), 1, binario);
-
-		} else {
-
-			fwrite(&(tamodelo), sizeof(int), 1, binario);  
-			fwrite(v->modelo, sizeof(char), tamodelo, binario); 
-
-		}
-		
-		
-		fwrite(&(tamcategoria), sizeof(int), 1, binario);
-		fwrite(v->categoria, sizeof(char), tamcategoria, binario);
-		int total = tam + 5;
-
-		return total;
-	}
 
 	void busca (FILE* binario, char* campo, int n) {
 
