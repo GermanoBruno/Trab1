@@ -103,6 +103,10 @@
 			reg->codLinha = atoi(codigoLinhaNaoTratado);
 		}
 
+		char* 
+		char* nomeLinhaNaoTratado;
+		char* corLinhaNaoTratado;
+
 		fscanf(fp, "%[^,],",  reg->aceitaCartao);
 		fscanf(fp, "%m[^,],", reg->nomeLinha);
 		fscanf(fp, "%m[^,],", reg->corLinha);
@@ -141,6 +145,8 @@
 		// Registro de tamanho variável
 		char  removido; 		// 1 byte
 		int   tamanhoRegistro;  // 4 bytes
+
+		// Não pode ser nulo
 		int   codLinha; 		// 4 bytes
 		char  aceitaCartao;		// 1 byte
 		
