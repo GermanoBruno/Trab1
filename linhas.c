@@ -120,19 +120,19 @@
 		}		
 
 		if(strcmp(nomeLinhaNaoTratado, nulo)){
-			reg->nomeLinha = '\0';
+			reg->tamanhoNome = 0;
 		}else{
 			strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
+			reg->tamanhoNome = sizeof(reg->nomeLinha);
 		}
 
 		if(strcmp(corLinhaNaoTratado, nulo)){
-			reg->corLinha = '\0';
+			reg->tamanhoCor = 0;
 		}else{
 			strcpy(reg->corLinha, nomeLinhaNaoTratado);
+			reg->tamanhoCor = sizeof(reg->corLinha);
 		}
 
-		reg->tamanhoCor = sizeof(reg->corLinha);
-		reg->tamanhoNome = sizeof(reg->nomeLinha);
 		reg->tamanhoRegistro = 18 + reg->tamanhoCor + reg->tamanhoNome;
 
 		return 1;	
@@ -230,44 +230,28 @@
 		// TODO
 
 		// removido
-		fwrite(&(removido), sizeof(char), 1, fp);
-
-
+		fwrite(&(reg->removido), sizeof(char), 1, fp);
 		// tamanho registro
-		fwrite(&(removido), sizeof(int),  0, fp);
-
-
-
+		fwrite(&(reg->tamanhoRegistro), sizeof(int), 1, fp);
 		// codlinha
-		fwrite(&(removido), sizeof(int),  0, fp);
-
-
-
+		fwrite(&(reg->codLinha), sizeof(int),  1, fp);
 		// aceita cartao
-		fwrite(&(removido), sizeof(char), 0, fp);
-
+		fwrite(&(reg->aceitaCartao), sizeof(char), 0, fp);
 
 
 		// tamanho nome
-		fwrite(&(removido), sizeof(int),  0, fp);
-
-
-
-		// nomelinha
-		fwrite(&(removido), sizeof(char), 0, fp);
-
-
+		fwrite(&(reg->tamanhoNome), sizeof(int),  1, fp);
+		if(reg->tamanhoNome != 0){
+			// nomelinha
+			fwrite(&(reg->nomeLinha), sizeof(char), reg->tamanhoNome, fp);
+		}
 
 		// tamanho cor
-		fwrite(&(removido), sizeof(int),  0, fp);
-
-
-
-		// corlinha
-		fwrite(&(removido), sizeof(char), 0, fp);
-
-
-
+		fwrite(&(reg->tamanhoCor), sizeof(int),  1, fp);
+		if(reg->tamanhoCor != 0){
+			// corlinha
+			fwrite(&(reg->corLinha), sizeof(char), reg->tamanhoCor, fp);
+		}
 	}
 
 	void buscaRegistroLinha(){
