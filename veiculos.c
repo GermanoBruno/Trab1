@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "veiculo.h"
 
-struct Header {
+struct cabecalhoVeiculo {
 
 	char status;
 	long int byteProxReg;
@@ -18,7 +18,7 @@ struct Header {
 
 };
 
-struct Veiculo {
+struct registroVeiculo {
 
 	char prefixo[6];
 	char data[11];
@@ -35,9 +35,9 @@ struct Veiculo {
 
 };
 
-header* createHeader() {
+HeaderVeiculo* criarHeader() {
 
-	header* h = (header*)malloc(sizeof(header));
+	HeaderVeiculo* h = (HeaderVeiculo*)malloc(sizeof(HeaderVeiculo));
 	h->status = '0';
 	h->byteProxReg = 0;
 	h->nroRegistros = 0;
@@ -45,7 +45,7 @@ header* createHeader() {
 
 }
 
-void descreveHeader(header* h, FILE* fp) {
+void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 
 	fscanf(fp, "%[^,],", h->descrevePrefixo);
 	fscanf(fp, "%[^,],", h->descreveData);
@@ -64,7 +64,7 @@ void descreveHeader(header* h, FILE* fp) {
 
 }
 
-void setHeader(header* h, FILE* binario) {
+void setHeader(HeaderVeiculo* h, FILE* binario) {
 
 	fwrite(&(h->status), sizeof(char), 1, binario);
 	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
@@ -80,7 +80,7 @@ void setHeader(header* h, FILE* binario) {
 
 }
 
-void atualizaHeader (header* h, FILE* binario) {
+void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
 
 	fseek(binario, 0, SEEK_SET);
 	h->status = '1';
@@ -91,14 +91,14 @@ void atualizaHeader (header* h, FILE* binario) {
 
 }
 
-veiculo* create() {
+RegistroVeiculo* create() {
 
-	veiculo *v = (veiculo*)malloc(sizeof(veiculo));
+	RegistroVeiculo *v = (RegistroVeiculo*)malloc(sizeof(RegistroVeiculo));
 	return v;
 
 }
 
-int leitura (FILE* fp, veiculo* v) {
+int leitura (FILE* fp, RegistroVeiculo* v) {
 
 	//if (fscanf(fp, "%[^,],", v->prefixo) == EOF) return 0;
 	fscanf(fp, "%[^,],", v->prefixo);
@@ -111,7 +111,7 @@ int leitura (FILE* fp, veiculo* v) {
 	return 1;
 }
 
-int escrita (veiculo* v, char removido, int byteProxReg, FILE* binario) {
+int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) {
 
 	int tamodelo, flag = 0;
 	int tamcategoria = strlen(v->categoria);
@@ -176,7 +176,7 @@ int escrita (veiculo* v, char removido, int byteProxReg, FILE* binario) {
 }
 
 
-void atualizaBinario(header* h, veiculo* v, FILE* binario) {
+void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
 	int tam;
 	char removido;
@@ -206,7 +206,7 @@ void atualizaBinario(header* h, veiculo* v, FILE* binario) {
 	*/
 }
 
-void imprime (veiculo* v) {
+void imprime (RegistroVeiculo* v) {
 
 	printf("%s\n", v->prefixo);
 	printf("%s\n", v->data);
@@ -218,7 +218,7 @@ void imprime (veiculo* v) {
 
 }
 
-void libera (veiculo* v) {
+void libera (RegistroVeiculo* v) {
 
 	if (v != NULL) {
 	

@@ -1,8 +1,8 @@
 #ifndef VEICULO_H
 #define VEICULO_H
 
-typedef struct Header header;
-typedef struct Veiculo veiculo;
+typedef struct cabecalhoVeiculo HeaderVeiculo;
+typedef struct registroVeiculo  RegistroVeiculo;
 
 header* createHeader();
 void descreveHeader(header* h, FILE* fp);

@@ -5,6 +5,8 @@
 #include "veiculos.h"
 
 
+#define DEBUG 0
+
 int main(int argc, char const *argv[])
 {
 	int opNum;
@@ -13,22 +15,45 @@ int main(int argc, char const *argv[])
 
 	switch(opNum){
 		case 1:
+			// Leitura do veiculo.csv
+			// Escrita dos registros num binario
+			// binario na tela
 			break;
 		case 2:
+			// Leitura de linha.csv
+			// Escrita dos registros num binario
+			// binario na tela
 			break;
 		case 3:
+			// Leitura do veiculo.bin
+			// Escrita formatada de cada registro
 			break;
 		case 4:
+			// Leitura do linha.bin
+			// Escrita formatada de cada registro
 			break;
 		case 5:
+			// Leitura do veiculo.bin
+			// Busca por algum criterio
+			// Escrita formatada dos reg que satisfazem
 			break;
 		case 6:
+			// Leitura do linha.bin
+			// Busca por algum criterio
+			// Escrita formatada dos reg que satisfazem
 			break;
 		case 7:
+			// Entrada: registro de veiculo
+			// Insercao no veiculo.bin
+			// Binario na tela
 			break;
 		case 8:
+			// ENtrada: registro de linha
+			// Insercao no linha.bin
+			// binario na tela
 			break;
 		default:
+			// Erro de entrada
 			break;
 	}
 
