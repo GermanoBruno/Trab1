@@ -114,6 +114,7 @@
 		// Identificação de valores nulos 
 		if(strcmp(aceitaCartaoNaoTratado, nulo)){
 			reg->aceitaCartao = '\0';
+
 		}else{
 			strcpy(reg->aceitaCartao, aceitaCartaoNaoTratado);
 		}		
@@ -130,6 +131,9 @@
 			strcpy(reg->corLinha, nomeLinhaNaoTratado);
 		}
 
+		reg->tamanhoCor = sizeof(reg->corLinha);
+		reg->tamanhoNome = sizeof(reg->nomeLinha);
+		reg->tamanhoRegistro = 18 + reg->tamanhoCor + reg->tamanhoNome;
 
 		return 1;	
 	}
@@ -159,23 +163,6 @@
 		fwrite(&(h->nroRegistros), 			sizeof(int),      1, fp);
 		fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 	  1, fp);
 	}
-
-	struct registroLinha
-	{
-		// Registro de tamanho variável
-		char  removido; 		// 1 byte
-		int   tamanhoRegistro;  // 4 bytes
-
-		// Não pode ser nulo
-		int   codLinha; 		// 4 bytes
-		char  aceitaCartao;		// 1 byte
-		
-		int   tamanhoNome; 		// 4 bytes
-		char* nomeLinha;		// variavel
-
-		int   tamanhoCor;		// 4 bytes
-		char* corLinha; 		// variavel
-	};
 
 	void imprimeRegistroLinha(RegistroLinha* reg){
 		/*
@@ -219,6 +206,23 @@
 		printf("\n");
 	}
 
+	struct registroLinha
+	{
+		// Registro de tamanho variável
+		char  removido; 		// 1 byte
+		int   tamanhoRegistro;  // 4 bytes
+
+		// Não pode ser nulo
+		int   codLinha; 		// 4 bytes
+		char  aceitaCartao;		// 1 byte
+		
+		int   tamanhoNome; 		// 4 bytes
+		char* nomeLinha;		// variavel
+
+		int   tamanhoCor;		// 4 bytes
+		char* corLinha; 		// variavel
+	};
+
 	// AINDA NÃO TERMINEI A PARTIR DAQUI
 
 	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
@@ -231,18 +235,39 @@
 
 		// tamanho registro
 		fwrite(&(removido), sizeof(int),  0, fp);
+
+
+
 		// codlinha
 		fwrite(&(removido), sizeof(int),  0, fp);
+
+
+
 		// aceita cartao
 		fwrite(&(removido), sizeof(char), 0, fp);
+
+
+
 		// tamanho nome
 		fwrite(&(removido), sizeof(int),  0, fp);
+
+
+
 		// nomelinha
 		fwrite(&(removido), sizeof(char), 0, fp);
+
+
+
 		// tamanho cor
 		fwrite(&(removido), sizeof(int),  0, fp);
+
+
+
 		// corlinha
 		fwrite(&(removido), sizeof(char), 0, fp);
+
+
+
 	}
 
 	void buscaRegistroLinha(){
