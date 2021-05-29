@@ -22,7 +22,7 @@ struct registroVeiculo {
 
 	char prefixo[6];
 	char data[11];
-	int quatidadeLugares;
+	int quantidadeLugares;
 	int codLinha;
 	char* modelo;
 	char* categoria;
@@ -103,7 +103,7 @@ int leitura (FILE* fp, RegistroVeiculo* v) {
 	//if (fscanf(fp, "%[^,],", v->prefixo) == EOF) return 0;
 	fscanf(fp, "%[^,],", v->prefixo);
 	fscanf(fp, "%[^,],", v->data);
-	fscanf(fp, "%d,", &(v->quatidadeLugares));
+	fscanf(fp, "%d,", &(v->quantidadeLugares));
 	fscanf(fp, "%d,", &(v->codLinha));
 	fscanf(fp, "%m[^,],", &(v->modelo));
 	fscanf(fp, "%m[^\n]\n", &(v->categoria));
@@ -142,7 +142,7 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
 		fwrite(v->data, sizeof(char), strlen(v->data), binario); 
 	}
 	
-	fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
+	fwrite(&(v->quantidadeLugares), sizeof(int), 1, binario);
 	
 	
 	if (v->codLinha == 0){
@@ -210,7 +210,7 @@ void imprime (RegistroVeiculo* v) {
 
 	printf("%s\n", v->prefixo);
 	printf("%s\n", v->data);
-	printf("%d\n", v->quatidadeLugares);
+	printf("%d\n", v->quantidadeLugares);
     printf("%d\n", v->codLinha);
     printf("%s\n", v->modelo);
     printf("%s\n", v->categoria);
@@ -343,4 +343,20 @@ void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o 
 	printf("%lf\n", (cs / (double) 100));
 	free(mb);
 	fclose(fs);
+}
+
+void funcionalidade1(FILE* fpCsv, FILE* fpBin){
+
+}
+
+void funcionalidade3(FILE* fpBin){
+
+}
+
+void funcionalidade5(FILE* fpBin, char nomeDoCampo[17], char valor[100]){
+
+}
+
+void funcionalidade7(FILE* fpBin, int qtdRegistros){
+
 }

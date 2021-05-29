@@ -111,13 +111,6 @@
 		// Cor que descreve a linha
 
 		// ver se precisa collocar 4 pra ler o \0
-
-		char check;
-		if(fread(&check, sizeof(char), 1, fp) != 1){
-			return 0;
-		}
-
-		fseek(ponteiro, -sizeof(char), SEEK_CUR);
 		char codigoLinhaNaoTratado[3];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
@@ -187,7 +180,7 @@
 			h->nroRegistros++;
 		}
 
-		tam = escreveRegistroLinha(reg, removido, h->byteProxReg, fp);
+		tam = escreveRegistroLinha(reg, h->byteProxReg, fp);
 		h->byteProxReg = tam + h->byteProxReg;
 
 		fseek(fp, 1, SEEK_SET);
@@ -282,9 +275,11 @@
 		char* corLinha; 		// variavel
 	};
 
-	// AINDA NÃO TERMINEI A PARTIR DAQUI
-	void leRegistroLinha(RegistroLinha* reg, FILE* fp){
-
+	int leRegistroLinha(RegistroLinha* reg, FILE* fp){
+		char check;
+		if(fread(&check, sizeof(char), 1, fp) != 1){
+			return 0;
+		}
 		// Leitura dos dados já formatados (tamanhos fixos)
 		fread(&(reg->removido), sizeof(char), 1, fp);
 		fread(&(reg->tamanhoRegistro), sizeof(int), 1, fp);
@@ -302,8 +297,6 @@
 			// corlinha
 			fread(&(reg->corLinha), sizeof(char), reg->tamanhoCor, fp);
 		}
-
-		return 1;
 	}
 
 	void buscaRegistroLinha(FILE* fp){
@@ -317,6 +310,93 @@
 	//////////////////////////////////////////////////////////////////////////
 	///// Escrita e busca tão copiados do veiculos pra referencia rapida /////
 	//////////////////////////////////////////////////////////////////////////
+
+	void busca (FILE* binario, char* campo, int n) {
+
+		/*	Prefixo do veiculo: BA004
+			Modelo do veiculo: NEOBUS MEGA
+			Categoria do veiculo: ALIMENTADOR
+			Data de entrada do veiculo na frota: 29 de maio de 2009
+			Quantidade de lugares sentados disponiveis: campo com valor nulo
+			--- pule uma linha em branco ---
+		*/
+
+		char removido, prefixo[6], data[11], *modelo, *categoria;
+		int tam, qtdlug, tamodelo, tamcategoria, codlinha, i = 0, fdata = 0;
+		fseek(binario, 175, SEEK_SET);
+
+		while (i < n) {
+			
+			fread(&(removido), sizeof(char), 1, binario);
+			if (removido == '0'){
+				i++;
+				printf("Registro inexistente\n");
+				fread(&(tam), sizeof(int), 1, binario);
+				fseek(binario, tam, SEEK_CUR);
+				continue;
+			}
+
+			fread(&(tam), sizeof(int), 1, binario);
+			//printf("Tamanho do registro: %d\n", tam);
+
+			fread(prefixo, sizeof(char), 5, binario);
+			prefixo[5] = '\0';
+			//printf("Prefixo do veiculo: %s\n", prefixo);
+
+			fread(data, sizeof(char), 10, binario);
+			data[10] = '\0';
+			if (data[0] == '@') fdata = 1;
+			//printf("Data de entrada do veiculo na frota: %s\n", data);
+
+			fread(&(qtdlug), sizeof(int), 1, binario);
+			//printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
+
+			fread(&(codlinha), sizeof(int), 1, binario);
+			//printf("Codigo da linha: %d\n", codlinha);
+
+			fread(&(tamodelo), sizeof(int), 1, binario);
+			if (tamodelo != 0) {
+				
+				modelo = (char*)malloc(sizeof(char) * tamodelo + 1); 
+				fread(modelo, sizeof(char), tamodelo, binario);
+				modelo[tamodelo] = '\0';
+			
+			}
+			//printf("Modelo do veiculo: %s\n", modelo);
+
+			fread(&(tamcategoria), sizeof(int), 1, binario);
+			categoria = (char*)malloc(sizeof(char) * tamcategoria + 1); 
+			fread(categoria, sizeof(char), tamcategoria, binario);
+			categoria[tamcategoria] = '\0';
+			//printf("Categoria do veiculo: %s\n", categoria);
+
+			if (strcmp(campo, prefixo) == 0) {
+
+				printf("Tamanho do registro: %d\n", tam);
+				printf("Prefixo do veiculo: %s\n", prefixo);
+				printf("Data de entrada do veiculo na frota: ");
+				if (fdata) printf("NULO\n");
+				else printf("%s\n", data);
+
+				printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
+				printf("Codigo da linha: %d\n", codlinha);
+
+				printf("Modelo do veiculo: ");
+				if (tamodelo) printf("%s\n", modelo);
+				else printf("NULO\n");
+				printf("Categoria do veiculo: %s\n", categoria);
+				printf("\n");
+
+			}
+
+			if (tamodelo) free(modelo);
+			free(categoria);
+
+			i++;
+
+		}
+	}
+
 
 
 	// DEBUG PRINT
@@ -340,20 +420,16 @@
 		// Escrita dos registros num binario
 
 		// Cria as structs
-		HeaderLinha* h  = criarHeaderLinha();
+		HeaderLinha* 	h  = criarHeaderLinha();
 		RegistroLinha* reg = criaRegistroLinha();
 
-		// Le e escreve o cabecalho
+		// Le tudo
 		leituraCabecalhoLinhaCsv(h, fpCsv);
-		escritaCabecalhoLinha(h, fpBin);
+		
 
-		// Le e escreve cada registro
-		while(leRegistroLinhaCsv(reg, fpCsv)){
-			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			free(reg);
-			reg = criaRegistroLinha();
-		}
-		free(reg);
+		// Enquanto tiver registro pra ler
+
+
 	}
 
 	void funcionalidade4(FILE* fpBin){

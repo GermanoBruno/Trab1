@@ -10,53 +10,119 @@
 int main(int argc, char const *argv[])
 {
 	int opNum;
-	printf("Qual operacao?\n");
+	char nomeArquivoCsv[20];
+	char nomeArquivoBinario[20];
+	FILE* fpCsv;
+	FILE* fpBin;
+	int qtdRegistros;
+	char nomeDoCampo[17];
+	char valor[100];
+
+	//printf("Qual operacao?\n");
 	scanf("%d", &opNum);
 
 	switch(opNum){
 		case 1:
 			// Leitura do veiculo.csv
+			scanf("%s %s", nomeArquivoCsv, nomeArquivoBinario);
+			fpCsv = fopen(nomeArquivoCsv, 'r');
+			fpBin = fopen(nomeArquivoCsv, 'wb+');
+
 			// Escrita dos registros num binario
+			funcionalidade1(fpCsv, fpBin);
+
 			// binario na tela
+			fclose(fpCsv);
+			fclose(fpBin);
+			binarioNaTela(fpBin);
 			break;
 		case 2:
 			// Leitura de linha.csv
+			scanf("%s %s", nomeArquivoCsv, nomeArquivoBinario);
+			fpCsv = fopen(nomeArquivoCsv, 'r');
+			fpBin = fopen(nomeArquivoCsv, 'wb+');
+
+			funcionalidade2(fpCsv, fpBin);
 			// Escrita dos registros num binario
 			// binario na tela
+			fclose(fpCsv);
+			fclose(fpBin);
+			binarioNaTela(fpBin);
 			break;
 		case 3:
+			scanf("%s", nomeArquivoBinario);
+
+			fpBin = fopen(nomeArquivoBinario, 'rb');
+
 			// Leitura do veiculo.bin
 			// Escrita formatada de cada registro
+			funcionalidade3(fpBin);
+			fclose(fpBin);
 			break;
 		case 4:
-			// Leitura do linha.bin
+			scanf("%s", nomeArquivoBinario);
+
+			fpBin = fopen(nomeArquivoBinario, 'rb');
+
+			// Leitura do veiculo.bin
 			// Escrita formatada de cada registro
+			funcionalidade4(fpBin);
+			fclose(fpBin);
 			break;
 		case 5:
+			scanf("%s %s", nomeArquivoBinario, nomeDoCampo);
+			scan_quote_string(valor);
+
+			fpBin = fopen(nomeArquivoBinario, 'rb');
 			// Leitura do veiculo.bin
 			// Busca por algum criterio
 			// Escrita formatada dos reg que satisfazem
+			funcionalidade5(fpBin, nomeDoCampo, valor);
+
+			fclose(fpBin);
 			break;
 		case 6:
+			scanf("%s %s", nomeArquivoBinario, nomeDoCampo);
+			scan_quote_string(valor);
+
+			fpBin = fopen(nomeArquivoBinario, 'rb');
 			// Leitura do linha.bin
 			// Busca por algum criterio
 			// Escrita formatada dos reg que satisfazem
+			funcionalidade6(fpBin, nomeDoCampo, valor);
+
+			fclose(fpBin);
 			break;
 		case 7:
+			scanf("%s %d", nomeArquivoBinario, &qtdRegistros);
+
+			fpBin = fopen(nomeArquivoBinario, 'wb+');
 			// Entrada: registro de veiculo
 			// Insercao no veiculo.bin
+			funcionalidade7(fpBin, qtdRegistros);
+			
 			// Binario na tela
+			fclose(fpBin);
+			binarioNaTela(fpBin);
+
 			break;
 		case 8:
+			scanf("%s %d", nomeArquivoBinario, &qtdRegistros);
+
+			fpBin = fopen(nomeArquivoBinario, 'wb+');
 			// ENtrada: registro de linha
 			// Insercao no linha.bin
+			funcionalidade8(fpBin, qtdRegistros);
+
 			// binario na tela
+			fclose(fpBin);
+			binarioNaTela(fpBin);
+
 			break;
 		default:
 			// Erro de entrada
 			break;
 	}
-
 	return 0;
 }
 
