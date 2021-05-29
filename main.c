@@ -7,7 +7,6 @@
 #include "veiculos.h"
 
 
-#define DEBUG 1
 
 void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o código dessa função. */
 
@@ -120,7 +119,9 @@ int main(int argc, char const *argv[])
 			// binario na tela
 			fclose(fpCsv);
 			fclose(fpBin);
+			if(DEBUG) printf("Fechou os arquivos\n");
 			binarioNaTela(nomeArquivoBinario);
+			if(DEBUG) printf("Saiu do switch\n");
 			break;
 		case 3:
 			scanf("%s", nomeArquivoBinario);

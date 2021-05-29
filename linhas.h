@@ -1,6 +1,8 @@
 #ifndef LINHAS_H
 #define LINHAS_H
 
+#define DEBUG 0
+
 typedef struct cabecalhoLinha HeaderLinha;
 typedef struct registroLinha  RegistroLinha;
 

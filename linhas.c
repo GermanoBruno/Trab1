@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "linhas.h"
 
-#define DEBUG 1
+
 
 struct registroLinha
 {
@@ -139,7 +139,7 @@ struct cabecalhoLinha
 // Registros
 	
 	RegistroLinha* criaRegistroLinha(void){
-		RegistroLinha *reg = (RegistroLinha*)malloc(sizeof(RegistroLinha*));
+		RegistroLinha *reg = (RegistroLinha*)malloc(sizeof(RegistroLinha));
 		
 		if(DEBUG){
 			printf("Criou registro Linha\n");
@@ -163,7 +163,7 @@ struct cabecalhoLinha
 		}
 
 		fseek(fp, -sizeof(char), SEEK_CUR);
-		char codigoLinhaNaoTratado[3];
+		char codigoLinhaNaoTratado[4];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
 
@@ -186,28 +186,29 @@ struct cabecalhoLinha
 
 		fscanf(fp, "%m[^,],", &aceitaCartaoNaoTratado);
 		fscanf(fp, "%m[^,],", &reg->nomeLinha);
-		fscanf(fp, "%m[^,],", &reg->corLinha);
+		fscanf(fp, "%m[^\n]\n", &reg->corLinha);
+		if(DEBUG) printf("\n ---cor linha instantanea: %s---\n", reg->corLinha);
 
 		// Identificação de valores nulos 
-		if(strcmp(aceitaCartaoNaoTratado, nulo)){
+		if(strcmp(aceitaCartaoNaoTratado, nulo) == 0){
 			reg->aceitaCartao = '\0';
 
 		}else{
 			reg->aceitaCartao = aceitaCartaoNaoTratado[0];
 		}		
 
-		if(strcmp(reg->nomeLinha, nulo)){
+		if(strcmp(reg->nomeLinha, nulo) == 0){
 			reg->tamanhoNome = 0;
 		}else{
 			//strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
-			reg->tamanhoNome = sizeof(*(reg->nomeLinha));
+			reg->tamanhoNome = strlen(reg->nomeLinha);
 		}
 
-		if(strcmp(reg->corLinha, nulo)){
+		if(strcmp(reg->corLinha, nulo) == 0){
 			reg->tamanhoCor = 0;
 		}else{
 			//strcpy(reg->corLinha, nomeLinhaNaoTratado);
-			reg->tamanhoCor = sizeof(*(reg->corLinha));
+			reg->tamanhoCor = strlen(reg->corLinha);
 		}
 
 		reg->tamanhoRegistro = 18 + reg->tamanhoCor + reg->tamanhoNome;
@@ -236,7 +237,7 @@ struct cabecalhoLinha
 	void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp){
 		int  tam;
 
-		if(reg->removido = '1') {
+		if(reg->removido == '0') {
 			h->nroRegistrosRemovidos++;
 		}else{
 			h->nroRegistros++;
@@ -409,10 +410,10 @@ struct cabecalhoLinha
 		// Le e escreve cada registro
 		while(leRegistroLinhaCsv(reg, fpCsv)){
 			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			free(reg);			
+			liberaRegistroLinha(reg);			
 			reg = criaRegistroLinha();
 		}
-		free(reg);
+		liberaRegistroLinha(reg);
 
 		if(DEBUG){
 			printf("Func2 terminou\n\n");
@@ -426,10 +427,10 @@ struct cabecalhoLinha
 		}	
 		while(leRegistroLinha(reg, fpBin)){
 			imprimeRegistroLinha(reg);
-			free(reg);
+			liberaRegistroLinha(reg);
 			reg = criaRegistroLinha();
 		}
-		free(reg);
+		liberaRegistroLinha(reg);
 		if(DEBUG){
 			printf("Func4 terminou\n");
 		}
