@@ -1,19 +1,42 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "linhas.h"
+
+#define DEBUG 1
+
+struct registroLinha
+{
+	// Registro de tamanho variável
+	char  removido; 		// 1 byte
+	int   tamanhoRegistro;  // 4 bytes
+
+	// Não pode ser nulo
+	int   codLinha; 		// 4 bytes
+	char  aceitaCartao;		// 1 byte
+	
+	int   tamanhoNome; 		// 4 bytes
+	char* nomeLinha;		// variavel
+
+	int   tamanhoCor;		// 4 bytes
+	char* corLinha; 		// variavel
+};
+struct cabecalhoLinha
+{
+	// Tamanho fixo
+	// Total: 82 Bytes
+	char 	 status; 				//  1 byte
+	long int byteProxReg;			//  8 bytes
+	int 	 nroRegistros; 			//  4 bytes
+	int 	 nroRegistrosRemovidos;	//  4 bytes
+	char 	 descreveCodigo[16];	// 15 bytes
+	char 	 descreveCartao[14];	// 13 bytes
+	char 	 descreveNome[14];		// 13 bytes
+	char 	 descreveCor[25]; 		// 24 bytes
+};
+
+
 // Cabeçalho
-
-	struct cabecalhoLinha
-	{
-		// Tamanho fixo
-		// Total: 82 Bytes
-		char 	 status; 				//  1 byte
-		long int byteProxReg;			//  8 bytes
-		int 	 nroRegistros; 			//  4 bytes
-		int 	 nroRegistrosRemovidos;	//  4 bytes
-		char 	 descreveCodigo[16];	// 15 bytes
-		char 	 descreveCartao[14];	// 13 bytes
-		char 	 descreveNome[14];		// 13 bytes
-		char 	 descreveCor[25]; 		// 24 bytes
-	};
-
 	HeaderLinha* criarHeaderLinha(){
 		HeaderLinha* h = (HeaderLinha*)malloc(sizeof(HeaderLinha));
 		h->status = '0';
@@ -21,61 +44,77 @@
 		h->nroRegistros = 0;
 		h->nroRegistrosRemovidos = 0;
 
-		if(DEBUG) printDebugCabecalhoLinha(h);
+		if(DEBUG){
+			printf("Criou HeaderLinha\n");
+			printDebugCabecalhoLinha(h);
+		}
+
 
 		return h;
 	}
 
 	void leituraCabecalhoLinhaCsv(HeaderLinha* h, FILE* fp){
-		HeaderLinha* h = criarHeaderLinha();
+		// HeaderLinha* h = criarHeaderLinha();
 
 		fscanf(fp, "%[^,],", h->descreveCodigo);
 		fscanf(fp, "%[^,],", h->descreveCartao);
 		fscanf(fp, "%[^,],", h->descreveNome);
 		fscanf(fp, "%[^\n]\n", h->descreveCor);
 
-		if(DEBUG) printDebugCabecalhoLinha(h);
+		if(DEBUG){
+			printf("Leu cabecalhoLinha csv\n");
+			printDebugCabecalhoLinha(h);
+		}
 	}
 
 	HeaderLinha* leituraCabecalhoLinhaBinario(FILE* fp){
 		HeaderLinha* h = (HeaderLinha*)malloc(sizeof(HeaderLinha));
 
-		fread(h->status, 				sizeof(char),	  1, fp);
-		fread(h->byteProxReg, 			sizeof(long int), 1, fp);
-		fread(h->nroRegistros, 			sizeof(int), 	  1, fp);
-		fread(h->nroRegistrosRemovidos, sizeof(int), 	  1, fp);
+		fread(&(h->status), 				sizeof(char),	  1, fp);
+		fread(&(h->byteProxReg), 			sizeof(long int), 1, fp);
+		fread(&(h->nroRegistros), 			sizeof(int), 	  1, fp);
+		fread(&(h->nroRegistrosRemovidos), sizeof(int), 	  1, fp);
 		fread(h->descreveCodigo, 		sizeof(char), 	 16, fp);
 		fread(h->descreveCartao, 		sizeof(char), 	 14, fp);
 		fread(h->descreveNome,			sizeof(char), 	 14, fp);
 		fread(h->descreveCor, 			sizeof(char), 	 25, fp);
 
-		if(DEBUG) printDebugCabecalhoLinha(h);
+		if(DEBUG) {
+			printf("Leu cabecalhoLinha binario\n");
+			printDebugCabecalhoLinha(h);
+		}
 
 		return h;
 	}
 
 	void escritaCabecalhoLinha(HeaderLinha* h, FILE* fp){
-		fwrite(h->status, 				 sizeof(char),     1,  fp);
-		fwrite(h->byteProxReg, 			 sizeof(long int), 1,  fp);
-		fwrite(h->nroRegistros,			 sizeof(int),      1,  fp);
-		fwrite(h->nroRegistrosRemovidos, sizeof(int),      1,  fp);
+		fwrite(&(h->status), 				 sizeof(char),     1,  fp);
+		fwrite(&(h->byteProxReg), 			 sizeof(long int), 1,  fp);
+		fwrite(&(h->nroRegistros),			 sizeof(int),      1,  fp);
+		fwrite(&(h->nroRegistrosRemovidos), sizeof(int),      1,  fp);
 		fwrite(h->descreveCodigo,		 sizeof(char),    15,  fp);
 		fwrite(h->descreveCartao,		 sizeof(char),    13,  fp);
 		fwrite(h->descreveNome,			 sizeof(char),    13,  fp);
 		fwrite(h->descreveCor,			 sizeof(char),    24,  fp);
 
-		if(DEBUG) printDebugCabecalhoLinha(h);
+		if(DEBUG) {
+			printf("Escreveu cabecalhoLinha\n");
+			printDebugCabecalhoLinha(h);
+		}
 	}
 
 	void atualizaCabecalhoLinha(HeaderLinha*h, FILE* fp){
 		fseek(fp, 0, SEEK_SET);
 		h->status = '1';
-		fwrite(h->status, 				 sizeof(char),      1,  fp);
-		fwrite(h->byteProxReg, 			 sizeof(long int),  1,  fp);
-		fwrite(h->nroRegistros,			 sizeof(int),       1,  fp);
-		fwrite(h->nroRegistrosRemovidos, sizeof(int),       1,  fp);
+		fwrite(&(h->status), 				sizeof(char),      1,  fp);
+		fwrite(&(h->byteProxReg), 			sizeof(long int),  1,  fp);
+		fwrite(&(h->nroRegistros),			sizeof(int),       1,  fp);
+		fwrite(&(h->nroRegistrosRemovidos), sizeof(int),       1,  fp);
 
-		if(DEBUG) printDebugCabecalhoLinha(h);
+		if(DEBUG) {
+			printf("Atualizou cabecalhoLinha\n");
+			printDebugCabecalhoLinha(h);
+		}
 	}
 
 	void liberaCabecalhoLinha(HeaderLinha* h){
@@ -90,17 +129,22 @@
 			return;
 		} 
 		printf("Prints das descricoes cabecalho linha\n");
-		printf("%s\n", h->descreveCodigo);
-		printf("%s\n", h->descreveCartao);
-		printf("%s\n", h->descreveNome);
-		printf("%s\n", h->descreveCor);
+		printf("Cod: %s\n", h->descreveCodigo);
+		printf("Cartao: %s\n", h->descreveCartao);
+		printf("Nome: %s\n", h->descreveNome);
+		printf("Cor: %s\n", h->descreveCor);
 	}
 
 	///////////////////////////////////////////////////////////////////////
 // Registros
 	
 	RegistroLinha* criaRegistroLinha(void){
-		RegistroLinha *reg = (RegistroLinha*)malloc(sizeof(RegistroLinha));
+		RegistroLinha *reg = (RegistroLinha*)malloc(sizeof(RegistroLinha*));
+		
+		if(DEBUG){
+			printf("Criou registro Linha\n");
+			//printDebugRegistroLinha(reg);
+		}
 		return reg;
 	}
 	
@@ -114,10 +158,11 @@
 
 		char check;
 		if(fread(&check, sizeof(char), 1, fp) != 1){
+			if(DEBUG) printf("Arquivo já terminado\n");
 			return 0;
 		}
 
-		fseek(ponteiro, -sizeof(char), SEEK_CUR);
+		fseek(fp, -sizeof(char), SEEK_CUR);
 		char codigoLinhaNaoTratado[3];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
@@ -137,44 +182,54 @@
 		char* aceitaCartaoNaoTratado;
 		char* nomeLinhaNaoTratado;
 		char* corLinhaNaoTratado;
-		char  nulo[] = 'NULO'
+		char  nulo[] = "NULO";
 
-		fscanf(fp, "%m[^,],", aceitaCartaoNaoTratado);
-		fscanf(fp, "%m[^,],", nomeLinhaNaoTratado);
-		fscanf(fp, "%m[^,],", corLinhaNaoTratado);
+		fscanf(fp, "%m[^,],", &aceitaCartaoNaoTratado);
+		fscanf(fp, "%m[^,],", &reg->nomeLinha);
+		fscanf(fp, "%m[^,],", &reg->corLinha);
 
 		// Identificação de valores nulos 
 		if(strcmp(aceitaCartaoNaoTratado, nulo)){
 			reg->aceitaCartao = '\0';
 
 		}else{
-			strcpy(reg->aceitaCartao, aceitaCartaoNaoTratado);
+			reg->aceitaCartao = aceitaCartaoNaoTratado[0];
 		}		
 
-		if(strcmp(nomeLinhaNaoTratado, nulo)){
+		if(strcmp(reg->nomeLinha, nulo)){
 			reg->tamanhoNome = 0;
 		}else{
-			strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
-			reg->tamanhoNome = sizeof(reg->nomeLinha);
+			//strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
+			reg->tamanhoNome = sizeof(*(reg->nomeLinha));
 		}
 
-		if(strcmp(corLinhaNaoTratado, nulo)){
+		if(strcmp(reg->corLinha, nulo)){
 			reg->tamanhoCor = 0;
 		}else{
-			strcpy(reg->corLinha, nomeLinhaNaoTratado);
-			reg->tamanhoCor = sizeof(reg->corLinha);
+			//strcpy(reg->corLinha, nomeLinhaNaoTratado);
+			reg->tamanhoCor = sizeof(*(reg->corLinha));
 		}
 
 		reg->tamanhoRegistro = 18 + reg->tamanhoCor + reg->tamanhoNome;
+		if(DEBUG){
+			printf("Nome: %s\nCor: %s\n", reg->nomeLinha, reg->corLinha);
+			printf("Tamanhos: cor %d, nome %d\n", reg->tamanhoCor, reg->tamanhoNome);
+			printf("Leu registro Linha\n");
+			printDebugRegistroLinha(reg);
+		}
 
 		return 1;	
 	}
 
 	void liberaRegistroLinha(RegistroLinha* reg){
 		if(reg != NULL){
-			if(reg->nomeLinha != NULL) free(reg->);
-			if(reg->corLinha != NULL) free(reg->);
+			if(reg->nomeLinha != NULL) free(reg->nomeLinha);
+			if(reg->corLinha != NULL) free(reg->corLinha);
 			free(reg);
+		}
+		if(DEBUG){
+			printf("Liberou registro Linha\n");
+			//printDebugRegistroLinha(reg);
 		}
 	}
 
@@ -187,13 +242,18 @@
 			h->nroRegistros++;
 		}
 
-		tam = escreveRegistroLinha(reg, removido, h->byteProxReg, fp);
+		tam = escreveRegistroLinha(reg, reg->removido, h->byteProxReg, fp);
 		h->byteProxReg = tam + h->byteProxReg;
 
 		fseek(fp, 1, SEEK_SET);
 		fwrite(&(h->byteProxReg), 			sizeof(long int), 1, fp);
 		fwrite(&(h->nroRegistros), 			sizeof(int),      1, fp);
 		fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 	  1, fp);
+
+		if(DEBUG){
+			printf("Atualizou cabecalho Linha binario\n");
+			printDebugCabecalhoLinha(h);
+		}
 	}
 
 	void imprimeRegistroLinha(RegistroLinha* reg){
@@ -236,6 +296,11 @@
 				break;
 		}
 		printf("\n");
+
+		if(DEBUG){
+			printf("Imprimiu registro Linha\n");
+			//printDebugRegistroLinha(reg);
+		}
 	}
 
 	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
@@ -253,7 +318,7 @@
 		// escrita dos dados de tamanho variável
 		fwrite(&(reg->tamanhoNome), sizeof(int),  1, fp);
 		if(reg->tamanhoNome != 0){
-			// nomelinha
+			// nomeLinha
 			fwrite(&(reg->nomeLinha), sizeof(char), reg->tamanhoNome, fp);
 		}
 		fwrite(&(reg->tamanhoCor), sizeof(int),  1, fp);
@@ -261,30 +326,20 @@
 			// corlinha
 			fwrite(&(reg->corLinha), sizeof(char), reg->tamanhoCor, fp);
 		}
+		if(DEBUG){
+			printf("Escreveu registro Linha\n");
+			printDebugRegistroLinha(reg);
+		}
 
 		return reg->tamanhoRegistro;
 	}
 
-	struct registroLinha
-	{
-		// Registro de tamanho variável
-		char  removido; 		// 1 byte
-		int   tamanhoRegistro;  // 4 bytes
-
-		// Não pode ser nulo
-		int   codLinha; 		// 4 bytes
-		char  aceitaCartao;		// 1 byte
-		
-		int   tamanhoNome; 		// 4 bytes
-		char* nomeLinha;		// variavel
-
-		int   tamanhoCor;		// 4 bytes
-		char* corLinha; 		// variavel
-	};
-
-	// AINDA NÃO TERMINEI A PARTIR DAQUI
-	void leRegistroLinha(RegistroLinha* reg, FILE* fp){
-
+	int leRegistroLinha(RegistroLinha* reg, FILE* fp){
+		char check;
+		if(fread(&check, sizeof(char), 1, fp) != 1){
+			return 0;
+		}
+		fseek(fp, -sizeof(char), SEEK_CUR);
 		// Leitura dos dados já formatados (tamanhos fixos)
 		fread(&(reg->removido), sizeof(char), 1, fp);
 		fread(&(reg->tamanhoRegistro), sizeof(int), 1, fp);
@@ -302,22 +357,20 @@
 			// corlinha
 			fread(&(reg->corLinha), sizeof(char), reg->tamanhoCor, fp);
 		}
-
+		if(DEBUG){
+			printf("Leu registro Linha\n");
+			printDebugRegistroLinha(reg);
+		}
 		return 1;
 	}
 
 	void buscaRegistroLinha(FILE* fp){
-		RegistroLinha* reg = criaRegistroLinha();
-		HeaderLinha* h = leituraCabecalhoLinhaCsv(fp);
+		//RegistroLinha* reg = criaRegistroLinha();
+		//HeaderLinha* h = leituraCabecalhoLinhaCsv(fp);
 
 		// Ler cada registro, procurar o valor descrito no nome do campo
 		// printar esse registro com imprimeRegistroLinha()
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	///// Escrita e busca tão copiados do veiculos pra referencia rapida /////
-	//////////////////////////////////////////////////////////////////////////
-
 
 	// DEBUG PRINT
 	void printDebugRegistroLinha(RegistroLinha* reg){
@@ -325,14 +378,14 @@
 			printf("Não existe esse registro\n");
 			return;
 		}
-		printf("%s\n", reg->removido);
-		printf("%d\n", reg->tamanhoRegistro);
-		printf("%d\n", reg->codlinha);
-		printf("%s\n", reg->aceitaCartao);
-		printf("%d\n", reg->tamanhoNome);
-		printf("%s\n", reg->nomeLinha);
-		printf("%d\n", reg->tamanhoCor);
-		printf("%s\n", reg->corLinha);
+		printf("Removido: %c\n", reg->removido);
+		printf("TamReg: %d\n", reg->tamanhoRegistro);
+		printf("Cod: %d\n", reg->codLinha);
+		printf("Cartao: %c\n", reg->aceitaCartao);
+		printf("TamNome: %d\n", reg->tamanhoNome);
+		printf("Nome: %s\n", reg->nomeLinha);
+		printf("TamCor: %d\n", reg->tamanhoCor);
+		printf("Cor: %s\n\n", reg->corLinha);
 	}
 
 // Funcionalidades
@@ -342,28 +395,54 @@
 		// Cria as structs
 		HeaderLinha* h  = criarHeaderLinha();
 		RegistroLinha* reg = criaRegistroLinha();
+		if(DEBUG){
+			printf("Func2 criou structs\n\n");
+		}
 
 		// Le e escreve o cabecalho
 		leituraCabecalhoLinhaCsv(h, fpCsv);
 		escritaCabecalhoLinha(h, fpBin);
+		if(DEBUG){
+			printf("Func2 leu e escreveu o cabecalho\n\n");
+		}
 
 		// Le e escreve cada registro
 		while(leRegistroLinhaCsv(reg, fpCsv)){
 			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			free(reg);			
+			reg = criaRegistroLinha();
+		}
+		free(reg);
+
+		if(DEBUG){
+			printf("Func2 terminou\n\n");
+		}
+	}
+
+	void funcionalidade4(FILE* fpBin){
+	 	RegistroLinha* reg = criaRegistroLinha();
+	 	if(DEBUG){
+			printf("Func4 criou struct\n");
+		}	
+		while(leRegistroLinha(reg, fpBin)){
+			imprimeRegistroLinha(reg);
 			free(reg);
 			reg = criaRegistroLinha();
 		}
 		free(reg);
-	}
-
-	void funcionalidade4(FILE* fpBin){
-
+		if(DEBUG){
+			printf("Func4 terminou\n");
+		}
 	}
 
 	void funcionalidade6(FILE* fpBin, char nomeDoCampo[17], char valor[100]){
-
+		// Busca
 	}
 
 	void funcionalidade8(FILE* fpBin, int qtdRegistros){
-
+		RegistroLinha* reg = criaRegistroLinha();
+		for(int i = 0; i < qtdRegistros; i++){
+			// LER O REGISTRO E ARMAZENAR EM reg
+			// escrever no fpBin
+		}
 	}
