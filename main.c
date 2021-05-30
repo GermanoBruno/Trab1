@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "linhas.h"
-#include "veiculos.h"
+#include "veiculo.h"
 
 
 
@@ -97,7 +97,7 @@ int main(int argc, char const *argv[])
 			}
 
 			// Escrita dos registros num binario
-			//funcionalidade1(fpCsv, fpBin);
+			func1(fpCsv, fpBin);
 
 			// binario na tela
 			fclose(fpCsv);
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[])
 			// Leitura do veiculo.bin
 			// Escrita formatada de cada registro
 
-			//funcionalidade3(nomeArquivoBinario);
+			func3(fpBin);
 
 			fclose(fpBin);
 			break;

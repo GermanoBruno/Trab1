@@ -43,6 +43,8 @@ void buscaRegistroLinha(FILE* fp);
 
 // DEBUG PRINT
 void printDebugRegistroLinha(RegistroLinha* reg);
+
+int checkFile(FILE* fp); 
 // Funcionalidades
 void funcionalidade2(FILE* fpCsv, FILE* fpBin);
 void funcionalidade4(FILE* fpBin);

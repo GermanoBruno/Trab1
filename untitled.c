@@ -280,6 +280,7 @@
 		if(fread(&check, sizeof(char), 1, fp) != 1){
 			return 0;
 		}
+		fseek()
 		// Leitura dos dados já formatados (tamanhos fixos)
 		fread(&(reg->removido), sizeof(char), 1, fp);
 		fread(&(reg->tamanhoRegistro), sizeof(int), 1, fp);
