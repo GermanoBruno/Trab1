@@ -42,15 +42,33 @@ HeaderVeiculo* criarHeader() {
 	h->nroRegistrosRemovidos = 0;
 }
 
+void imprimeHeader(HeaderVeiculo* h){
+	printf("Status: %c\n", h->status);
+	printf("byteProxReg: %ld\n", h->byteProxReg);
+	printf("nroRegistros: %d\n", h->nroRegistros);
+	printf("nroRegistrosRemovidos: %d\n", h->nroRegistrosRemovidos);
+	printf("descrevePrefixo: %s\n", h->descrevePrefixo);
+	printf("descreveData: %s\n", h->descreveData);
+	printf("descreveLinha: %s\n", h->descreveLinha);
+	printf("descreveModelo: %s\n", h->descreveModelo);
+	printf("descreveCategoria: %s\n", h->descreveCategoria);
+}
+
 void readHeader(HeaderVeiculo* h, FILE* binario) {
 	fread(&(h->status), sizeof(char), 1, binario);
 	fread(&(h->byteProxReg), sizeof(long int), 1, binario);
 	fread(&(h->nroRegistros), sizeof(int), 1, binario);
 	fread(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
+	fread(h->descrevePrefixo, sizeof(char), 18, binario);
+	fread(h->descreveData, sizeof(char), 35, binario);
+	fread(h->descreveLugares, sizeof(char), 42, binario);
+	fread(h->descreveLinha, sizeof(char), 26, binario);
+	fread(h->descreveModelo, sizeof(char), 17, binario);
+	fread(h->descreveCategoria, sizeof(char), 20, binario);
 }
 
-void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 
+void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descrevePrefixo);
 	fscanf(fp, "%[^,],", h->descreveData);
 	fscanf(fp, "%[^,],", h->descreveLugares);
@@ -58,6 +76,7 @@ void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descreveModelo);
 	fscanf(fp, "%[^\n]\n", h->descreveCategoria);
 }
+
 
 void setHeader(HeaderVeiculo* h, FILE* binario) {
 
@@ -254,7 +273,9 @@ void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
 	tam = escrita(v, removido, h->byteProxReg, binario);
 
+	
 	h->byteProxReg = h->byteProxReg + tam;
+	printf("bpr = %ld\n", h->byteProxReg);
 }
 
 void libera (RegistroVeiculo* v) {
@@ -756,26 +777,62 @@ void func7(FILE* binario, int n) {
 	HeaderVeiculo* h = criarHeader();
 
 	readHeader(h, binario);
+	imprimeHeader(h);
+	//printf("Bpr = %ld\n", h->byteProxReg);
 
-	char* prefixo = NULL;
-	char* data = NULL;
+	char prefixo[7];
+	char data[12];
 	int lug = 0;
+	char lugNaoTratado[4];
+	char codNaoTratado[6];
 	int codl = 0;
-	char* modelo = NULL;
-	char* categoria = NULL;
+	char modelo[100];
+	char categoria[100];
 	int i = 0;
 
 	while (i < n) { 
 		RegistroVeiculo* v = create();
-		/* Ler direito
+		
+		//Ler direito
 		scan_quote_string(prefixo);
 		scan_quote_string(data);
-		scanf("%d %d", &lug, &codl);
+		if(strcmp(data, "") == 0){
+			/*data[0] = '\0';
+			for(int j = 1; j < 10; j++){
+				data[j] = '@';
+			}*/
+			printf("Data nula\n");
+			strcpy(data, "@@@@@@@@@@");
+		}
+		scanf("%s %s", lugNaoTratado, codNaoTratado);
+		if((lugNaoTratado[0] == 'N') || (lugNaoTratado[0] == 'n')){
+			lug = -1;
+		}else{
+			lug = atoi(lugNaoTratado);
+		}
+		if((codNaoTratado[0] == 'N') || (codNaoTratado[0] == 'n')){
+			codl = -1;
+		}else{
+			codl = atoi(codNaoTratado);
+		}
 		scan_quote_string(modelo);
+		if(strcmp(modelo, "") == 0){
+			strcpy(modelo, "NULO");
+		}
 		scan_quote_string(categoria);
-		*/
+		if(strcmp(categoria, "") == 0){
+			strcpy(categoria, "NULO");
+		}
+		/*printf("pref: %s\n", prefixo);
+		printf("data: %s\n", data);
+		printf("lug: %d\n", lug);
+		printf("cod: %d\n", codl);
+		printf("mod: %s\n", modelo);
+		printf("cat: %s\n", categoria);*/
+		
 		setVeiculo(v, prefixo, data, lug, codl, modelo, categoria);
 		atualizaBinario(h, v, binario);
+		imprimeVeiculo(v);
 		libera(v);
 		i++;
 	}

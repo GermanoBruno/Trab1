@@ -12,7 +12,8 @@ run:
 	./program
 clean:
 	rm -rf program *.o testes/teste* Trab1.zip
-
+valg:
+	valgrind --leak-check=full --track-origins=yes ./program
 zip:
 	zip Trab1 linhas.* main.c Makefile veiculo.c veiculo.h auxiliares.*
 test1:

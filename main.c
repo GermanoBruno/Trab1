@@ -142,7 +142,7 @@ int main(int argc, char const *argv[])
 		case 8:
 			scanf("%s %d", nomeArquivoBinario, &qtdRegistros);
 
-			fpBin = fopen(nomeArquivoBinario, "wb+");
+			fpBin = fopen(nomeArquivoBinario, "rb+");
 			if(fpBin == NULL){
 				printf("Falha no processamento do arquivo.\n");
 				return 0;

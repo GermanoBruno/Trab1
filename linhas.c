@@ -158,11 +158,6 @@ struct cabecalhoLinha
 		// Nome da linha, 
 		// Cor que descreve a linha
 
-
-		// Verifica se ainda tem arquivo para ser lido
-		//fseek(fp, -sizeof(char), SEEK_CUR);
-
-
 		char codigoLinhaNaoTratado[4];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
@@ -184,12 +179,10 @@ struct cabecalhoLinha
 		char* corLinhaNaoTratado;
 		char  nulo[] = "NULO";
 
-		fscanf(fp, "%m[^,],", &aceitaCartaoNaoTratado);
-		fscanf(fp, "%m[^,],", &reg->nomeLinha);
-		fscanf(fp, "%m[^\n]\n", &reg->corLinha);
 		//if(DEBUG) printf("\n ---cor linha instantanea: %s---\n", reg->corLinha);
 
 		// Identificação de valores nulos 
+		fscanf(fp, "%m[^,],", &aceitaCartaoNaoTratado);
 		if(strcmp(aceitaCartaoNaoTratado, nulo) == 0){
 			reg->aceitaCartao = '\0';
 
@@ -197,18 +190,23 @@ struct cabecalhoLinha
 			reg->aceitaCartao = aceitaCartaoNaoTratado[0];
 		}		
 
-		if(strcmp(reg->nomeLinha, nulo) == 0){
+		fscanf(fp, "%m[^,],", &nomeLinhaNaoTratado);
+		if(strcmp(nomeLinhaNaoTratado, nulo) == 0){
 			reg->tamanhoNome = 0;
 		}else{
-			//strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
-			reg->tamanhoNome = strlen(reg->nomeLinha);
+			reg->tamanhoNome = strlen(nomeLinhaNaoTratado);
+			reg->nomeLinha = (char*)malloc(sizeof(char) * (reg->tamanhoNome));
+			
+			strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
 		}
 
-		if(strcmp(reg->corLinha, nulo) == 0){
+		fscanf(fp, "%m[^\n]\n", &corLinhaNaoTratado);
+		if(strcmp(corLinhaNaoTratado, nulo) == 0){
 			reg->tamanhoCor = 0;
 		}else{
-			//strcpy(reg->corLinha, nomeLinhaNaoTratado);
-			reg->tamanhoCor = strlen(reg->corLinha);
+			reg->tamanhoCor = strlen(corLinhaNaoTratado);
+			reg->corLinha = (char*)malloc(sizeof(char) * (reg->tamanhoCor));
+			strcpy(reg->corLinha, corLinhaNaoTratado);
 		}
 
 		reg->tamanhoRegistro = 13 + reg->tamanhoCor + reg->tamanhoNome;
@@ -219,6 +217,8 @@ struct cabecalhoLinha
 			printDebugRegistroLinha(reg);
 		}
 		free(aceitaCartaoNaoTratado);
+		free(nomeLinhaNaoTratado);
+		free(corLinhaNaoTratado);
 
 		return 1;	
 	}
@@ -241,7 +241,7 @@ struct cabecalhoLinha
 	void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp){
         int tam = 5;
 
-        if(reg->removido = '1') {
+        if(reg->removido == '0') {
             h->nroRegistrosRemovidos++;
         }else{
             h->nroRegistros++;
@@ -265,17 +265,18 @@ struct cabecalhoLinha
 			--- pule uma linha em branco ---
 		*/
 
-		if(reg->removido = '1'){
+		if(reg->removido == '0'){
 			return;
 		}
+		printf("Codigo da linha: %d\n", reg->codLinha);
 		printf("Nome da linha: ");
-		if(reg->tamanhoNome = 0){
+		if(reg->tamanhoNome == 0){
 			printf("campo com valor nulo\n");
 		}else{
 			printf("%s\n", reg->nomeLinha);
 		}
 		printf("Cor que descreve a linha: ");
-		if(reg->tamanhoCor = 0){
+		if(reg->tamanhoCor == 0){
 			printf("campo com valor nulo\n");
 		}else{
 			printf("%s\n", reg->corLinha);
@@ -366,14 +367,16 @@ struct cabecalhoLinha
 		fread(&(reg->tamanhoNome), 		sizeof(int),  1, fp);
 		if(reg->tamanhoNome != 0){
 			// nomelinha
-			reg->nomeLinha = (char*)malloc((sizeof(char) * reg->tamanhoNome));
+			reg->nomeLinha = (char*)malloc((sizeof(char) * (reg->tamanhoNome+1)));
 			fread(reg->nomeLinha, 	sizeof(char), reg->tamanhoNome, fp);
+			reg->nomeLinha[reg->tamanhoNome] = '\0';
 		}
 		fread(&(reg->tamanhoCor), 		sizeof(int),  1, fp);
 		if(reg->tamanhoCor != 0){
 			// corlinha
-			reg->corLinha = (char*)malloc((sizeof(char)* reg->tamanhoCor));
+			reg->corLinha = (char*)malloc((sizeof(char)* (reg->tamanhoCor+1)));
 			fread(reg->corLinha, sizeof(char), reg->tamanhoCor, fp);
+			reg->corLinha[reg->tamanhoCor] = '\0';
 		}
 		if(DEBUG){
 			printf("Leu registro Linha\n");
@@ -473,6 +476,8 @@ struct cabecalhoLinha
 			//printf("Criou prox\n");
 
 		}
+		atualizaHeaderLinha(h, fpBin);
+		liberaCabecalhoLinha(h);
 		liberaRegistroLinha(reg);
 		if(DEBUG){
 			printf("Func4 terminou\n");
