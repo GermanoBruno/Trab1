@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+
 #include "veiculo.h"
+#include "auxiliares.h"
 
 struct cabecalhoVeiculo {
 
@@ -15,7 +18,6 @@ struct cabecalhoVeiculo {
 	char descreveLinha[27];
 	char descreveModelo[18];
 	char descreveCategoria[21];
-
 };
 
 struct registroVeiculo {
@@ -30,28 +32,21 @@ struct registroVeiculo {
 	int tamanhoRegistro;
 	int tamanhoModelo;
 	int tamanhoCategoria;
-
-
-
 };
 
 HeaderVeiculo* criarHeader() {
-
 	HeaderVeiculo* h = (HeaderVeiculo*)malloc(sizeof(HeaderVeiculo));
 	h->status = '0';
 	h->byteProxReg = 0;
 	h->nroRegistros = 0;
 	h->nroRegistrosRemovidos = 0;
-
 }
 
 void readHeader(HeaderVeiculo* h, FILE* binario) {
-
 	fread(&(h->status), sizeof(char), 1, binario);
 	fread(&(h->byteProxReg), sizeof(long int), 1, binario);
 	fread(&(h->nroRegistros), sizeof(int), 1, binario);
 	fread(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
-
 }
 
 void descreveHeader(HeaderVeiculo* h, FILE* fp) {
@@ -62,14 +57,6 @@ void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descreveLinha);
 	fscanf(fp, "%[^,],", h->descreveModelo);
 	fscanf(fp, "%[^\n]\n", h->descreveCategoria);
-	
-	/*	printf("%s\n", h->descrevePrefixo);
-		printf("%s\n", h->descreveData);
-		printf("%s\n", h->descreveLugares);
-		printf("%s\n", h->descreveLinha);
-		printf("%s\n", h->descreveModelo);
-		printf("%s\n", h->descreveCategoria);
-	*/
 }
 
 void setHeader(HeaderVeiculo* h, FILE* binario) {
@@ -100,7 +87,6 @@ void readHeaderBin(HeaderVeiculo* h, FILE* binario) {
     fread(h->descreveLinha, sizeof(char), 26, binario);
     fread(h->descreveModelo, sizeof(char), 17, binario);
     fread(h->descreveCategoria, sizeof(char), 20, binario);
-
 }
 
 void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
@@ -111,40 +97,53 @@ void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
 	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
 	fwrite(&(h->nroRegistros), sizeof(int), 1, binario);
 	fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
+}
 
+void liberaHeader(HeaderVeiculo* h) {
+
+    if (h != NULL) free(h);
 }
 
 RegistroVeiculo* create() {
 
 	RegistroVeiculo *v = (RegistroVeiculo*)malloc(sizeof(RegistroVeiculo));
+	v->modelo = NULL;
+	v->categoria = NULL;
+	v->quatidadeLugares = 0;
+	v->codLinha = 0;
+	v->removido = '0';
+	v->tamanhoRegistro = 0;
+	v->tamanhoModelo = 0;
+	v->tamanhoCategoria = 0;
 	return v;
-
 }
 
 void solveRemoved(char* prefix) {
-
 	int tam = strlen(prefix);
 
 	for (int i = 0; i < tam-1; i++) {
 		prefix[i] = prefix[i+1];
 	}
 	prefix[tam-1] = '\0';
-
 }
 
 void setVeiculo(RegistroVeiculo* v, char* prefixo, char* data, int lug, int codl, char* modelo, char* categoria) {
 
-	strcpy(v->prefixo, prefixo);
-	strcpy(v->data, data);
-	v->quatidadeLugares = lug;
-	v->codLinha = codl;
-	strcpy(v->modelo, modelo);
-	strcpy(v->categoria, categoria);
+    strcpy(v->prefixo, prefixo);
+    strcpy(v->data, data);
+    v->quatidadeLugares = lug;
+    v->codLinha = codl;
+
+    v->modelo = (char*)malloc(sizeof(char)*strlen(modelo)+1);
+    strcpy(v->modelo, modelo);
+    v->modelo[strlen(modelo)] = '\0';
+
+    v->categoria = (char*)malloc(sizeof(char)*strlen(categoria)+1);
+    strcpy(v->categoria, categoria);
+    v->categoria[strlen(categoria)] = '\0';
 
 }
-
 int leitura (FILE* fp, RegistroVeiculo* v) {
-
     //if (fscanf(fp, "%[^,],", v->prefixo) == EOF) return 0;
     char lixo[5];
     fscanf(fp, "%[^,],", v->prefixo);
@@ -164,8 +163,9 @@ int leitura (FILE* fp, RegistroVeiculo* v) {
 
 int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) {
 
-    int tamodelo, flagm = 0;
-    int tamcategoria, flagc = 0;
+	// NEM tamodelo NEM tamcateogoria SAO NECESSARIOS!!! USAR OS PROPRIOS CAMPOS DO VEICULO
+    int flagm = 0;
+    int flagc = 0;
     int tam = 31;
 
     //if (removido == '0') tam--;
@@ -174,16 +174,16 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         flagm = 1;
     } 
     else {
-        tamodelo = strlen(v->modelo);
-        tam += tamodelo;
+        v->tamanhoModelo = strlen(v->modelo);
+        tam += v->tamanhoModelo;
     }
 
     if (strcmp(v->categoria, "NULO") == 0) {
         flagc = 1;
     } 
     else {
-        tamcategoria = strlen(v->categoria);
-        tam += tamcategoria;
+        v->tamanhoCategoria = strlen(v->categoria);
+        tam += v->tamanhoCategoria;
     }
 
     fseek(binario, byteProxReg, SEEK_SET);
@@ -215,46 +215,25 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
     }
 
-
-
-    /*if (v->codLinha == 0){
-
-        int lixo = -1;
-        fwrite(&lixo, sizeof(int), 1, binario);
-
-    } else {
-    }*/
     fwrite(&(v->codLinha), sizeof(int), 1, binario); 
 
-
-
     if (flagm == 1) {
-
         int tam = 0;
         fwrite(&tam, sizeof(int), 1, binario);
-
     } else {
 
-        fwrite(&(tamodelo), sizeof(int), 1, binario);
-        fwrite(v->modelo, sizeof(char), tamodelo, binario); 
-
+        fwrite(&(v->tamanhoModelo), sizeof(int), 1, binario);
+        fwrite(v->modelo, sizeof(char), v->tamanhoModelo, binario); 
     }
-
-
     if (flagc == 1) {
-
         int tam = 0;
         fwrite(&tam, sizeof(int), 1, binario);
-
     } else {
-
-        fwrite(&(tamcategoria), sizeof(int), 1, binario);
-        fwrite(v->categoria, sizeof(char), tamcategoria, binario); 
-
+        fwrite(&(v->tamanhoCategoria), sizeof(int), 1, binario);
+        fwrite(v->categoria, sizeof(char), v->tamanhoCategoria, binario); 
     }
 
     int total = tam + 5;
-
     return total;
 }
 
@@ -264,35 +243,23 @@ void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 	char removido;
 
 	if (v->prefixo[0] == '*') {
-		
 		solveRemoved(v->prefixo);
 		h->nroRegistrosRemovidos++;
 		removido = '0'; 
 	}
 	else  {
-
 		h->nroRegistros++;
 		removido = '1';
-
 	}
 
 	tam = escrita(v, removido, h->byteProxReg, binario);
 
 	h->byteProxReg = h->byteProxReg + tam;
-	//printf("%ld\n", h->byteProxReg);
-	
-	/*
-	fseek(binario, 1, SEEK_SET);
-	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
-	fwrite(&(h->nroRegistros), sizeof(int), 1, binario);
-	fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
-	*/
 }
 
 void libera (RegistroVeiculo* v) {
 
 	if (v != NULL) {
-	
 		if (v->modelo != NULL) free(v->modelo);
 		if (v->categoria != NULL) free(v->categoria);
 		free(v);
@@ -385,37 +352,8 @@ void busca (FILE* binario, char* campo, int n) {
 		i++;
 
 	}
-
 }
-/*
-void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o código dessa função. *
 
-	* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
-	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). *
-
-	unsigned long i, cs;
-	unsigned char *mb;
-	size_t fl;
-	FILE *fs;
-	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
-		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
-		return;
-	}
-	fseek(fs, 0, SEEK_END);
-	fl = ftell(fs);
-	fseek(fs, 0, SEEK_SET);
-	mb = (unsigned char *) malloc(fl);
-	fread(mb, 1, fl, fs);
-
-	cs = 0;
-	for(i = 0; i < fl; i++) {
-		cs += (unsigned long) mb[i];
-	}
-	printf("%lf\n", (cs / (double) 100));
-	free(mb);
-	fclose(fs);
-}
-*/
 int check(FILE* fp) {
 	
 	char check;
@@ -447,15 +385,6 @@ void func1(FILE* fp, FILE* binario) {
 
 	}
 	atualizaHeader(h, binario);
-
-	//busca(binario, "DN020", tamveiculos);
-	
-	//fclose(fp);
-	//fclose(binario);
-
-	//binarioNaTela(bin);
-
-
 }
 
 void printData(char* data) {
@@ -520,7 +449,6 @@ void printData(char* data) {
 			break;
 
 	}
-
 }
 
 void func3(FILE* binario) {
@@ -608,3 +536,250 @@ void func3(FILE* binario) {
 	}
 }
 
+void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam) {
+
+	fread(removido, sizeof(char), 1, binario);
+		
+		if (*removido == '0') {
+			
+			fread(tam, sizeof(int), 1, binario);
+			fseek(binario, *tam, SEEK_CUR);
+			return;
+			
+		}  
+
+		fread(tam, sizeof(int), 1, binario);
+
+		fread(v->prefixo, sizeof(char), 5, binario);
+		v->prefixo[5] = '\0';
+
+		fread(v->data, sizeof(char), 10, binario);
+		v->data[10] = '\0';
+		//if (data[1] == '@') fdata = 1;
+
+		fread(&(v->quatidadeLugares), sizeof(int), 1, binario);
+
+		fread(&(v->codLinha), sizeof(int), 1, binario);
+
+		fread(&(v->tamanhoModelo), sizeof(int), 1, binario);
+		if (v->tamanhoModelo != 0) {
+			
+			v->modelo = (char*)malloc(sizeof(char) * v->tamanhoModelo + 1); 
+			fread(v->modelo, sizeof(char), v->tamanhoModelo, binario);
+			v->modelo[v->tamanhoModelo] = '\0';
+		
+		}
+
+		fread(&(v->tamanhoCategoria), sizeof(int), 1, binario);
+		if (v->tamanhoCategoria != 0) {
+			
+			v->categoria = (char*)malloc(sizeof(char) * v->tamanhoCategoria + 1); 
+			fread(v->categoria, sizeof(char), v->tamanhoCategoria, binario);
+			v->categoria[v->tamanhoCategoria] = '\0';
+		
+		}
+}
+
+void imprimeVeiculo(RegistroVeiculo* v) {
+
+	printf("Prefixo do veiculo: %s\n", v->prefixo);
+
+	printf("Modelo do veiculo: ");
+	if (v->tamanhoModelo) printf("%s\n", v->modelo);
+	else printf("campo com valor nulo\n");
+
+	if (v->tamanhoCategoria) printf("Categoria do veiculo: %s\n", v->categoria);
+	else printf("campo com valor nulo\n");
+
+	printf("Data de entrada do veiculo na frota: ");
+	if (v->data[1] == '@') printf("campo com valor nulo\n");
+	else printData(v->data);
+
+	if (v->quatidadeLugares != -1) printf("Quantidade de lugares sentados disponiveis: %d\n", v->quatidadeLugares);
+	else printf("campo com valor nulo\n");
+		
+	printf("\n");
+}
+
+void busca_prefixo (FILE* binario, char* prefixo) {
+
+	char removido; int tam;
+	HeaderVeiculo* h = criarHeader();
+
+	readHeaderBin(h, binario);
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+
+	RegistroVeiculo *v;
+	while (check(binario)){
+		v = create();
+		leituraBinario(binario, v, &removido, &tam);
+		if (!removido) continue;
+
+		if (strcmp(v->prefixo, prefixo) == 0) imprimeVeiculo(v);
+
+		libera(v);
+	}
+	liberaHeader(h);
+}
+
+void busca_data (FILE* binario, char* data) {
+
+	char removido; int tam;
+	HeaderVeiculo* h = criarHeader(); 
+	RegistroVeiculo* v = create();
+
+	readHeaderBin(h, binario);
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+
+	while (check(binario)) {
+		
+		v = create();
+		leituraBinario(binario, v, &removido, &tam);
+		if (!removido) continue;
+
+		if (strcmp(v->data, data) == 0) imprimeVeiculo(v);
+
+		libera(v);
+	}
+	liberaHeader(h);
+}
+
+void busca_qtdlug (FILE* binario, int qtdlug) {
+
+	char removido; 
+	int tam;
+	HeaderVeiculo* h = criarHeader();
+	RegistroVeiculo* v;
+
+	readHeaderBin(h, binario);
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+	
+	while (check(binario)) {
+		
+		v = create();
+		leituraBinario(binario, v, &removido, &tam);
+		if (!removido) {
+			libera(v);
+			continue;
+		}
+
+
+		if (v->quatidadeLugares == qtdlug) imprimeVeiculo(v);
+
+		libera(v);
+	}
+	liberaHeader(h);
+}
+
+void busca_modelo (FILE* binario, char* modelo) {
+
+	char removido; int tam;
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v = create();
+
+	readHeaderBin(h, binario);
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+
+	while (check(binario)) {
+		
+		v = create();
+		leituraBinario(binario, v, &removido, &tam);
+		if (!removido) continue;
+
+		if (strcmp(v->modelo, modelo) == 0) imprimeVeiculo(v);
+
+		libera(v);
+	}
+	liberaHeader(h);
+}
+
+void busca_categoria (FILE* binario, char* categoria) {
+
+	char removido; int tam;
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v = create();
+
+	readHeaderBin(h, binario);
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+
+	while (check(binario)) {
+		
+		v = create();
+		
+		leituraBinario(binario, v, &removido, &tam);
+		if (!removido) continue;
+
+		if (strcmp(v->categoria, categoria) == 0) imprimeVeiculo(v);
+
+		libera(v);
+	}
+	liberaHeader(h);
+}
+
+void func5(FILE* binario, char* nomeDoCampo, char* valor) {
+
+	if (strcmp("prefixo", nomeDoCampo) == 0) {
+		//Funcao fornecida pra ler o campo
+		busca_prefixo(binario, valor);
+	}else if (strcmp("quantidadeLugares", nomeDoCampo) == 0) {
+		int qtd = atoi(valor);
+		busca_qtdlug(binario, qtd);
+	}else if (strcmp("modelo", nomeDoCampo) == 0) {
+		busca_modelo(binario, valor);
+	}else if (strcmp("data", nomeDoCampo) == 0) {
+		busca_data(binario, valor);
+	}else if (strcmp("categoria", nomeDoCampo) == 0) {
+		busca_categoria(binario, valor);
+	}
+}
+
+void func7(FILE* binario, int n) {
+	//FILE *fp, binario;
+	HeaderVeiculo* h = criarHeader();
+
+	readHeader(h, binario);
+
+	char* prefixo = NULL;
+	char* data = NULL;
+	int lug = 0;
+	int codl = 0;
+	char* modelo = NULL;
+	char* categoria = NULL;
+	int i = 0;
+
+	while (i < n) { 
+		RegistroVeiculo* v = create();
+		/* Ler direito
+		scan_quote_string(prefixo);
+		scan_quote_string(data);
+		scanf("%d %d", &lug, &codl);
+		scan_quote_string(modelo);
+		scan_quote_string(categoria);
+		*/
+		setVeiculo(v, prefixo, data, lug, codl, modelo, categoria);
+		atualizaBinario(h, v, binario);
+		libera(v);
+		i++;
+	}
+	atualizaHeader(h, binario);
+
+	liberaHeader(h);
+}

@@ -1,9 +1,11 @@
-all: main.o veiculo.o linhas.o
-	gcc main.o veiculo.o linhas.o -o program
+all: main.o veiculo.o linhas.o auxiliares.o
+	gcc main.o veiculo.o linhas.o auxiliares.o -o program
 main.o: main.c
 	gcc main.c -c
 veiculos.o: veiculo.c
 	gcc veiculo.c -c
+auxiliares.o: auxiliares.c
+	gcc auxiliares.c -c
 linhas.o: linhas.c
 	gcc linhas.c -c
 run:
@@ -12,7 +14,7 @@ clean:
 	rm -rf program *.o testes/teste* Trab1.zip
 
 zip:
-	zip Trab1 linhas.* main.c Makefile veiculo.c veiculo.h
+	zip Trab1 linhas.* main.c Makefile veiculo.c veiculo.h auxiliares.*
 test1:
 	./program < testes/1.in > testes/teste1.out 
 	diff testes/teste1.out testes/1.out

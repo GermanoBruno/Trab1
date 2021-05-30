@@ -22,7 +22,24 @@ void busca (FILE* binario, char* campo, int n);
 int check(FILE* fp);
 void func1(FILE* fp, FILE* binario);
 void func3(FILE* binario);
+void liberaHeader(HeaderVeiculo* h);
+RegistroVeiculo* create();
 
+void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam);
 
+void imprimeVeiculo(RegistroVeiculo* v);
+
+void busca_prefixo (FILE* binario, char prefixo[100]);
+
+void busca_data (FILE* binario, char data[100]);
+
+void busca_qtdlug (FILE* binario, int qtdlug);
+
+void busca_modelo (FILE* binario, char modelo[100]);
+
+void busca_categoria (FILE* binario, char categoria[100]);
+
+void func5(FILE* binario, char nomeDoCampo[17], char valor[100]);
+void func7(FILE* binario, int n);
 
 #endif
