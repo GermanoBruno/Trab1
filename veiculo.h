@@ -40,6 +40,6 @@ void busca_modelo (FILE* binario, char modelo[100]);
 void busca_categoria (FILE* binario, char categoria[100]);
 
 void func5(FILE* binario, char nomeDoCampo[17], char valor[100]);
-void func7(FILE* binario, int n);
+int func7(FILE* binario, int n);
 
 #endif

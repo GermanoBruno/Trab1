@@ -67,7 +67,6 @@ void readHeader(HeaderVeiculo* h, FILE* binario) {
 	fread(h->descreveCategoria, sizeof(char), 20, binario);
 }
 
-
 void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descrevePrefixo);
 	fscanf(fp, "%[^,],", h->descreveData);
@@ -76,7 +75,6 @@ void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descreveModelo);
 	fscanf(fp, "%[^\n]\n", h->descreveCategoria);
 }
-
 
 void setHeader(HeaderVeiculo* h, FILE* binario) {
 
@@ -275,7 +273,7 @@ void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
 	
 	h->byteProxReg = h->byteProxReg + tam;
-	printf("bpr = %ld\n", h->byteProxReg);
+	//printf("bpr = %ld\n", h->byteProxReg);
 }
 
 void libera (RegistroVeiculo* v) {
@@ -406,6 +404,7 @@ void func1(FILE* fp, FILE* binario) {
 
 	}
 	atualizaHeader(h, binario);
+	liberaHeader(h);
 }
 
 void printData(char* data) {
@@ -483,6 +482,10 @@ void func3(FILE* binario) {
 	HeaderVeiculo* h = criarHeader();
 	//printf("É aqui??\n");
 	readHeaderBin(h, binario);
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
 	//printf("Ou aqui??\n");
 
 	if(h->nroRegistros == 0){
@@ -628,6 +631,10 @@ void busca_prefixo (FILE* binario, char* prefixo) {
 	HeaderVeiculo* h = criarHeader();
 
 	readHeaderBin(h, binario);
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
 	
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
@@ -654,7 +661,11 @@ void busca_data (FILE* binario, char* data) {
 	RegistroVeiculo* v = create();
 
 	readHeaderBin(h, binario);
-	
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
+
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
 		return;
@@ -681,7 +692,11 @@ void busca_qtdlug (FILE* binario, int qtdlug) {
 	RegistroVeiculo* v;
 
 	readHeaderBin(h, binario);
-	
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
+
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
 		return;
@@ -772,12 +787,16 @@ void func5(FILE* binario, char* nomeDoCampo, char* valor) {
 	}
 }
 
-void func7(FILE* binario, int n) {
+int func7(FILE* binario, int n) {
 	//FILE *fp, binario;
 	HeaderVeiculo* h = criarHeader();
 
 	readHeader(h, binario);
-	imprimeHeader(h);
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return 0;
+	}
+	//imprimeHeader(h);
 	//printf("Bpr = %ld\n", h->byteProxReg);
 
 	char prefixo[7];
@@ -797,12 +816,7 @@ void func7(FILE* binario, int n) {
 		scan_quote_string(prefixo);
 		scan_quote_string(data);
 		if(strcmp(data, "") == 0){
-			/*data[0] = '\0';
-			for(int j = 1; j < 10; j++){
-				data[j] = '@';
-			}*/
-			printf("Data nula\n");
-			strcpy(data, "@@@@@@@@@@");
+			strcpy(data, "NULO");
 		}
 		scanf("%s %s", lugNaoTratado, codNaoTratado);
 		if((lugNaoTratado[0] == 'N') || (lugNaoTratado[0] == 'n')){
@@ -832,11 +846,12 @@ void func7(FILE* binario, int n) {
 		
 		setVeiculo(v, prefixo, data, lug, codl, modelo, categoria);
 		atualizaBinario(h, v, binario);
-		imprimeVeiculo(v);
+		//imprimeVeiculo(v);
 		libera(v);
 		i++;
 	}
 	atualizaHeader(h, binario);
 
 	liberaHeader(h);
+	return 1;
 }

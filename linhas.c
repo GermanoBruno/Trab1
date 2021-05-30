@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "linhas.h"
+#include "auxiliares.h"
+
 
 struct registroLinha
 {
@@ -195,7 +197,7 @@ struct cabecalhoLinha
 			reg->tamanhoNome = 0;
 		}else{
 			reg->tamanhoNome = strlen(nomeLinhaNaoTratado);
-			reg->nomeLinha = (char*)malloc(sizeof(char) * (reg->tamanhoNome));
+			reg->nomeLinha = (char*)malloc(1 + sizeof(char) * (reg->tamanhoNome));
 			
 			strcpy(reg->nomeLinha, nomeLinhaNaoTratado);
 		}
@@ -205,7 +207,7 @@ struct cabecalhoLinha
 			reg->tamanhoCor = 0;
 		}else{
 			reg->tamanhoCor = strlen(corLinhaNaoTratado);
-			reg->corLinha = (char*)malloc(sizeof(char) * (reg->tamanhoCor));
+			reg->corLinha = (char*)malloc(1 + sizeof(char) * (reg->tamanhoCor));
 			strcpy(reg->corLinha, corLinhaNaoTratado);
 		}
 
@@ -306,27 +308,6 @@ struct cabecalhoLinha
 
 	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
 		// Retorna o tamanho total do registro
-		/*
-		int flagNome = 0;
-	    int flagCor = 0;
-	    int tam = 18;
-
-
-	    if (strcmp(reg->corLinha, "NULO") == 0) {
-	        flagCor = 1;
-	    } 
-	    else {
-	        reg->tamanhoCor = strlen(reg->corLinha);
-	        tam += reg->tamanhoCor;
-	    }
-
-	    if (strcmp(reg->nomeLinha, "NULO") == 0) {
-	        flagNome = 1;
-	    } 
-	    else {
-	        reg->tamanhoNome = strlen(reg->nomeLinha);
-	        tam += reg->tamanhoNome;
-	    }*/
 
 		// Setta o ponteiro na posicao que vai escrever
 		fseek(fp, byteProxReg, SEEK_SET);
@@ -415,7 +396,6 @@ struct cabecalhoLinha
 	    fseek(fp, -sizeof(char), SEEK_CUR);
    		return 1;
 	}
-
 
 // Funcionalidades
 	void funcionalidade2(FILE* fpCsv, FILE* fpBin){
@@ -586,11 +566,11 @@ struct cabecalhoLinha
 		reg->aceitaCartao = cartao;
 		
 		reg->tamanhoNome = strlen(nome);
-		reg->nomeLinha = (char*)malloc(sizeof(char)*reg->tamanhoNome);
+		reg->nomeLinha = (char*)malloc(sizeof(char)*reg->tamanhoNome+1);
 		strcpy(reg->nomeLinha, nome);
 
 		reg->tamanhoCor = strlen(cor);
-		reg->corLinha = (char*)malloc(sizeof(char)*reg->tamanhoCor);
+		reg->corLinha = (char*)malloc(sizeof(char)*reg->tamanhoCor+1);
 		strcpy(reg->corLinha, cor);
 	}
 	/*
@@ -623,25 +603,45 @@ struct cabecalhoLinha
 	}
 	*/
 	
-	void funcionalidade8(FILE* fpBin, int qtdRegistros){
+	int funcionalidade8(FILE* fpBin, int qtdRegistros){
 		RegistroLinha* reg = criaRegistroLinha();
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
+		if(h->status == '0'){
+			printf("Falha no processamento do arquivo.\n");
+			return 0;
+		}
+
 		int cod = 0;
-		char cartao = '0';
-		char* nome = NULL;
-		char* cor = NULL;
+		char codNaoTratado[5];
+		char cartao[1];
+		char nome[100];
+		char cor[100];
 
 		for(int i = 0; i < qtdRegistros; i++){
-			// Ler os registros
+			scanf("%s ", codNaoTratado);
+			if(codNaoTratado[0] = '*'){
+				reg->removido = '0';
+				codNaoTratado[0] = codNaoTratado[1];
+				codNaoTratado[1] = codNaoTratado[2];
+				codNaoTratado[2] = '\0';
+			}
+			cod = atoi(codNaoTratado);
 
-			//setRegistroLinha(reg, cod, cartao, nome, cor)
+			scan_quote_string(cartao);
+			scan_quote_string(nome);
+			scan_quote_string(cor);
 
-			//atualizaBinarioLinha()
-			//liberaRegistroLinha(reg)
-			//reg = criaRegistroLinha();
+			setRegistroLinha(reg, cod, cartao[0], nome, cor);
+
+			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			liberaRegistroLinha(reg);
+			reg = criaRegistroLinha();
 
 		}
 
 		liberaRegistroLinha(reg);
 		liberaCabecalhoLinha(h);
+
+		return 1;
 	}
+

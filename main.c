@@ -125,18 +125,21 @@ int main(int argc, char const *argv[])
 		case 7:
 			scanf("%s %d", nomeArquivoBinario, &qtdRegistros);
 
-			fpBin = fopen(nomeArquivoBinario, "wb+");
+			fpBin = fopen(nomeArquivoBinario, "rb+");
 			if(fpBin == NULL){
 				printf("Falha no processamento do arquivo.\n");
 				return 0;
 			}
 			// Entrada: registro de veiculo
 			// Insercao no veiculo.bin
-			func7(fpBin, qtdRegistros);
+			if(func7(fpBin, qtdRegistros)){
+				fclose(fpBin);
+				binarioNaTela(nomeArquivoBinario);
+			}else{
+				fclose(fpBin);
+			}
 			
 			// Binario na tela
-			fclose(fpBin);
-			binarioNaTela(nomeArquivoBinario);
 
 			break;
 		case 8:
@@ -149,11 +152,13 @@ int main(int argc, char const *argv[])
 			}
 			// ENtrada: registro de linha
 			// Insercao no linha.bin
-			funcionalidade8(fpBin, qtdRegistros);
-
+			if(funcionalidade8(fpBin, qtdRegistros)){
+				fclose(fpBin);
+				binarioNaTela(nomeArquivoBinario);
+			}else{
+				fclose(fpBin);
+			}
 			// binario na tela
-			fclose(fpBin);
-			binarioNaTela(nomeArquivoBinario);
 
 			break;
 		default:

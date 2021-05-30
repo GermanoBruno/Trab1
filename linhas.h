@@ -49,6 +49,6 @@ int checkFile(FILE* fp);
 void funcionalidade2(FILE* fpCsv, FILE* fpBin);
 void funcionalidade4(FILE* fpBin);
 void funcionalidade6(FILE* fpBin, char nomeDoCampo[17], char valor[100]);
-void funcionalidade8(FILE* fpBin, int qtdRegistros);
+int funcionalidade8(FILE* fpBin, int qtdRegistros);
 
 #endif
