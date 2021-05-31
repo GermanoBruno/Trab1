@@ -38,6 +38,7 @@ struct cabecalhoLinha
 
 // Cabeçalho
 	HeaderLinha* criarHeaderLinha(){
+		// Inicializa o cabeçalho, settando os primeiros valores
 		HeaderLinha* h = (HeaderLinha*)malloc(sizeof(HeaderLinha));
 		h->status = '0';
 		h->byteProxReg = 82;
@@ -52,7 +53,7 @@ struct cabecalhoLinha
 	}
 
 	void leituraCabecalhoLinhaCsv(HeaderLinha* h, FILE* fp){
-		// HeaderLinha* h = criarHeaderLinha();
+		// Lê o cabeçalho no csv e guarda na Struct HeaderLinha
 
 		fscanf(fp, "%[^,],", h->descreveCodigo);
 		fscanf(fp, "%[^,],", h->descreveCartao);
@@ -66,6 +67,9 @@ struct cabecalhoLinha
 	}
 
 	HeaderLinha* leituraCabecalhoLinhaBinario(FILE* fp){
+		// Le o cabecalho em um arquivo binario e salva
+		// na struct HeaderLinha
+
 		HeaderLinha* h = (HeaderLinha*)malloc(sizeof(HeaderLinha));
 
 		fread(&(h->status), 				sizeof(char),	  1, fp);
@@ -89,6 +93,7 @@ struct cabecalhoLinha
 	}
 
 	void escritaCabecalhoLinha(HeaderLinha* h, FILE* fp){
+		// Escreve o cabeçalho no começo do arquivo binario
 		fwrite(&(h->status), 				 sizeof(char),     1,  fp);
 		fwrite(&(h->byteProxReg), 			 sizeof(long int), 1,  fp);
 		fwrite(&(h->nroRegistros),			 sizeof(int),      1,  fp);
@@ -105,7 +110,8 @@ struct cabecalhoLinha
 	}
 
 	void atualizaHeaderLinha (HeaderLinha* h, FILE* binario) {
-
+		// Atualiza o cabecalho de um arquivo binario com os valores
+		// presentes na struct HeaderLinha
         fseek(binario, 0, SEEK_SET);
         h->status = '1';
         fwrite(&(h->status), sizeof(char), 1, binario);
@@ -115,7 +121,7 @@ struct cabecalhoLinha
     }
 
 	void liberaCabecalhoLinha(HeaderLinha* h){
-		
+		// Libera a struct HeaderLinha na memoria
 		if(h != NULL) free(h);
 	}
 
@@ -136,6 +142,8 @@ struct cabecalhoLinha
 // Registros
 	
 	RegistroLinha* criaRegistroLinha(void){
+		// Cria a struct registrolinha e aloca espaco na memoria pra ela
+		// Inicializa com valores nulos
 		RegistroLinha *reg = (RegistroLinha*)malloc(sizeof(RegistroLinha));
 		
 		reg->removido = '0';
@@ -155,15 +163,14 @@ struct cabecalhoLinha
 	}
 	
 	int leRegistroLinhaCsv(RegistroLinha* reg, FILE* fp){
-		// Codigo da linha,
-		// Aceita cartao,
-		// Nome da linha, 
-		// Cor que descreve a linha
+		// Le uma linha de registro no csv
+		// Retorna o tamanho do registro
 
 		char codigoLinhaNaoTratado[4];
 
 		fscanf(fp, "%[^,],",  codigoLinhaNaoTratado);
 
+		// Tratamento do codigo linha, verificando se esta removido
 		if(codigoLinhaNaoTratado[0] != '*'){
 			reg->removido = '1';
 			reg->codLinha = atoi(codigoLinhaNaoTratado);
@@ -172,7 +179,6 @@ struct cabecalhoLinha
 			codigoLinhaNaoTratado[1] = codigoLinhaNaoTratado[2];
 			codigoLinhaNaoTratado[2] = '\0';
 			reg->removido = '0';
-			// ver se funciona esse atoi
 			reg->codLinha = atoi(codigoLinhaNaoTratado);
 		}
 
@@ -181,9 +187,8 @@ struct cabecalhoLinha
 		char* corLinhaNaoTratado;
 		char  nulo[] = "NULO";
 
-		//if(DEBUG) printf("\n ---cor linha instantanea: %s---\n", reg->corLinha);
-
 		// Identificação de valores nulos 
+		// e passa os valores lidos para a struct registroLinha
 		fscanf(fp, "%m[^,],", &aceitaCartaoNaoTratado);
 		if(strcmp(aceitaCartaoNaoTratado, nulo) == 0){
 			reg->aceitaCartao = '\0';
@@ -211,21 +216,24 @@ struct cabecalhoLinha
 			strcpy(reg->corLinha, corLinhaNaoTratado);
 		}
 
+		// Setta o tamanho total do registro como o tamanho fixo e 
+		// soma os tamanhos variáveis
 		reg->tamanhoRegistro = 13 + reg->tamanhoCor + reg->tamanhoNome;
+		free(aceitaCartaoNaoTratado);
+		free(nomeLinhaNaoTratado);
+		free(corLinhaNaoTratado);
 		if(DEBUG){
 			printf("Nome: %s\nCor: %s\n", reg->nomeLinha, reg->corLinha);
 			printf("Tamanhos: cor %d, nome %d\n", reg->tamanhoCor, reg->tamanhoNome);
 			printf("Leu registro Linha\n");
 			printDebugRegistroLinha(reg);
 		}
-		free(aceitaCartaoNaoTratado);
-		free(nomeLinhaNaoTratado);
-		free(corLinhaNaoTratado);
-
 		return 1;	
 	}
 
 	void liberaRegistroLinha(RegistroLinha* reg){
+		// Libera a struct registrolinha na memoria
+
 		if(reg != NULL){
 			//printf("vai liberar nome\n");
 			if(reg->nomeLinha != NULL) free(reg->nomeLinha);
@@ -241,6 +249,8 @@ struct cabecalhoLinha
 	}
 
 	void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp){
+        // Atualiza o cabecalho e escreve um registro na memoria
+
         int tam = 5;
 
         if(reg->removido == '0') {
@@ -249,7 +259,7 @@ struct cabecalhoLinha
             h->nroRegistros++;
         }
 
-        tam += escreveRegistroLinha(reg, reg->removido, h->byteProxReg, fp);
+        tam += escreveRegistroLinha(reg, h->byteProxReg, fp);
         h->byteProxReg = tam + h->byteProxReg;
         h->status = '1';
 
@@ -258,20 +268,18 @@ struct cabecalhoLinha
             printDebugCabecalhoLinha(h);
         }
     }
+	
 
 	void imprimeRegistroLinha(RegistroLinha* reg){
-		/*
-			Nome da linha: campo com valor nulo
-			Cor que descreve a linha: AMARELA
-			Aceita cartao: PAGAMENTO EM CARTAO SEM COBRADOR
-			--- pule uma linha em branco ---
-		*/
+		// Imprime o registroLinha de acordo com a especificacao dada
+
 
 		if(reg->removido == '0'){
 			return;
 		}
 		printf("Codigo da linha: %d\n", reg->codLinha);
 		printf("Nome da linha: ");
+		// Tratamento de nulos
 		if(reg->tamanhoNome == 0){
 			printf("campo com valor nulo\n");
 		}else{
@@ -283,6 +291,7 @@ struct cabecalhoLinha
 		}else{
 			printf("%s\n", reg->corLinha);
 		}
+		// Tratamento do aceitaCartao
 		printf("Aceita cartao: ");
 		switch(reg->aceitaCartao){
 			case 'S':
@@ -306,7 +315,8 @@ struct cabecalhoLinha
 		}
 	}
 
-	int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp){
+	int escreveRegistroLinha(RegistroLinha* reg, int byteProxReg, FILE* fp){
+		// Escreve um registro lido no arquivo binario
 		// Retorna o tamanho total do registro
 
 		// Setta o ponteiro na posicao que vai escrever
@@ -321,12 +331,10 @@ struct cabecalhoLinha
 		// escrita dos dados de tamanho variável
 		fwrite(&(reg->tamanhoNome), sizeof(int),  1, fp);
 		if(reg->tamanhoNome != 0){
-			// nomeLinha
 			fwrite(reg->nomeLinha, sizeof(char), reg->tamanhoNome, fp);
 		}
 		fwrite(&(reg->tamanhoCor), sizeof(int),  1, fp);
 		if(reg->tamanhoCor != 0){
-			// corlinha
 			fwrite(reg->corLinha, sizeof(char), reg->tamanhoCor, fp);
 		}
 		if(DEBUG){
@@ -338,6 +346,10 @@ struct cabecalhoLinha
 	}
 
 	int leRegistroLinha(RegistroLinha* reg, FILE* fp){
+		// Le um registro formatado no arquivo binario e salva
+		// na struct registroLinha
+
+
 		// Leitura dos dados já formatados (tamanhos fixos)
 		fread(&(reg->removido), 		sizeof(char), 1, fp);
 		fread(&(reg->tamanhoRegistro), 	sizeof(int),  1, fp);
@@ -347,14 +359,12 @@ struct cabecalhoLinha
 		// Leitura dos dados de tamanho variável
 		fread(&(reg->tamanhoNome), 		sizeof(int),  1, fp);
 		if(reg->tamanhoNome != 0){
-			// nomelinha
 			reg->nomeLinha = (char*)malloc((sizeof(char) * (reg->tamanhoNome+1)));
 			fread(reg->nomeLinha, 	sizeof(char), reg->tamanhoNome, fp);
 			reg->nomeLinha[reg->tamanhoNome] = '\0';
 		}
 		fread(&(reg->tamanhoCor), 		sizeof(int),  1, fp);
 		if(reg->tamanhoCor != 0){
-			// corlinha
 			reg->corLinha = (char*)malloc((sizeof(char)* (reg->tamanhoCor+1)));
 			fread(reg->corLinha, sizeof(char), reg->tamanhoCor, fp);
 			reg->corLinha[reg->tamanhoCor] = '\0';
@@ -364,14 +374,6 @@ struct cabecalhoLinha
 			printDebugRegistroLinha(reg);
 		}
 		return 1;
-	}
-
-	void buscaRegistroLinha(FILE* fp){
-		//RegistroLinha* reg = criaRegistroLinha();
-		//HeaderLinha* h = leituraCabecalhoLinhaCsv(fp);
-
-		// Ler cada registro, procurar o valor descrito no nome do campo
-		// printar esse registro com imprimeRegistroLinha()
 	}
 
 	// DEBUG PRINT
@@ -391,6 +393,8 @@ struct cabecalhoLinha
 	}
 
 	int checkFile(FILE* fp) {
+		// Funcao para verificar se o arquivo terminou
+
 		char check;
 	    if(fread(&check, sizeof(char), 1, fp) != 1) return 0;
 	    fseek(fp, -sizeof(char), SEEK_CUR);
@@ -399,9 +403,6 @@ struct cabecalhoLinha
 
 // Funcionalidades
 	void funcionalidade2(FILE* fpCsv, FILE* fpBin){
-		// PRECISA ATUALIZAR O STATUS
-		// ACHO QUE O REMOVIDO DE ALGUNS TA SAINDO ERRADO
-
 		// Escrita dos registros num binario
 
 		// Cria as structs
@@ -435,25 +436,28 @@ struct cabecalhoLinha
 	}
 
 	void funcionalidade4(FILE* fpBin){
+		// Le o arquivo binario e imprime todos os registros não removidos
+
 	 	RegistroLinha* reg = criaRegistroLinha();
 	 	HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
+	 	if(h->status == '0'){
+	 		// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+		}
 	 	if(DEBUG){
-			//printf("Func4 criou struct\n");
+			printf("Func4 criou struct\n");
 		}	
 		if(h->nroRegistros == 0){
+			// Se não houver registros, não tem o que imprimir
 			printf("Registro inexistente.\n");
 			return;
 		}
 		while(checkFile(fpBin)){
-			//printf("Vai ler reg\n");
+			// Se o arquivo não terminou, le os registros e imprime
 			leRegistroLinha(reg, fpBin);
-			//printf("Leu reg\n");
 			imprimeRegistroLinha(reg);
-			//printf("Parou de imprimir\n");
 			liberaRegistroLinha(reg);
-			//printf("Liberou reg\n");
 			reg = criaRegistroLinha();
-			//printf("Criou prox\n");
 
 		}
 		atualizaHeaderLinha(h, fpBin);
@@ -465,8 +469,12 @@ struct cabecalhoLinha
 	}
 
 	void buscaCartao(FILE* fp, char* valor){
+		// Imprime os registros com aceitaCartao igual ao valor passado
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fp);
-		
+		if(h->status == '0'){
+			// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+		}
 		if(h->nroRegistros == 0){
 			printf("Registro inexistente.\n");
 			return;
@@ -474,10 +482,12 @@ struct cabecalhoLinha
 
 		RegistroLinha* reg;
 		while (checkFile(fp)){
+			// Verificando se o arquivo nao terminou
 			reg = criaRegistroLinha();
+			// le o registro e verifica se não está removido
 			leRegistroLinha(reg, fp);
 			if (!reg->removido) continue;
-
+			//Se o valor é igual, imprime o registro
 			if (reg->aceitaCartao == *valor) imprimeRegistroLinha(reg);
 
 			liberaRegistroLinha(reg);
@@ -485,8 +495,12 @@ struct cabecalhoLinha
 		liberaCabecalhoLinha(h);
 	}
 	void buscaNome(FILE* fp, char* valor){
+		// Imprime os registros com aceitaCartao igual ao valor passado
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fp);
-		
+		if(h->status == '0'){
+			// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+		}
 		if(h->nroRegistros == 0){
 			printf("Registro inexistente.\n");
 			return;
@@ -494,9 +508,12 @@ struct cabecalhoLinha
 
 		RegistroLinha* reg;
 		while (checkFile(fp)){
+			// Verificando se o arquivo nao terminou
 			reg = criaRegistroLinha();
+			// le o registro e verifica se não está removido
 			leRegistroLinha(reg, fp);
 			if (!reg->removido) continue;
+			//Se o valor é igual, imprime o registro
 			if (strcmp(reg->nomeLinha, valor) == 0) imprimeRegistroLinha(reg);
 
 			liberaRegistroLinha(reg);
@@ -504,8 +521,13 @@ struct cabecalhoLinha
 		liberaCabecalhoLinha(h);
 	}
 	void buscaCodigo(FILE* fp, char* valor){
+		// Imprime os registros com aceitaCartao igual ao valor passado
+
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fp);
-		
+		if(h->status == '0'){
+			// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+		}
 		if(h->nroRegistros == 0){
 			printf("Registro inexistente.\n");
 			return;
@@ -513,9 +535,12 @@ struct cabecalhoLinha
 
 		RegistroLinha* reg;
 		while (checkFile(fp)){
+			// Verificando se o arquivo nao terminou
 			reg = criaRegistroLinha();
+			// le o registro e verifica se não está removido
 			leRegistroLinha(reg, fp);
 			if (!reg->removido) continue;
+			//Se o valor é igual, imprime o registro
 			int cod = atoi(valor);
 			if (reg->codLinha == cod) imprimeRegistroLinha(reg);
 
@@ -524,8 +549,13 @@ struct cabecalhoLinha
 		liberaCabecalhoLinha(h);
 	}
 	void buscaCor(FILE* fp, char* valor){
+		// Imprime os registros com aceitaCartao igual ao valor passado
+
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fp);
-		
+		if(h->status == '0'){
+			// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+		}
 		if(h->nroRegistros == 0){
 			printf("Registro inexistente.\n");
 			return;
@@ -533,9 +563,12 @@ struct cabecalhoLinha
 		RegistroLinha* reg;
 
 		while (checkFile(fp)){
+			// Verificando se o arquivo nao terminou
 			reg = criaRegistroLinha();
+			// le o registro e verifica se não está removido
 			leRegistroLinha(reg, fp);
 			if (!reg->removido) continue;
+			//Se o valor é igual, imprime o registro
 
 			if (strcmp(reg->corLinha, valor) == 0) imprimeRegistroLinha(reg);
 
@@ -545,10 +578,8 @@ struct cabecalhoLinha
 	}
 
 	void funcionalidade6(FILE* fpBin, char* nomeDoCampo, char* valor){
-		// Busca
-		// Aceita cartao
-		// Nome Linha
-		// corLinha
+		// Verifica qual o nome do campo buscado e chama a funcao 
+		// correspondente à essa busca
 
 		if(strcmp("aceitaCartao", nomeDoCampo) == 0){
 			buscaCartao(fpBin, valor);
@@ -562,6 +593,8 @@ struct cabecalhoLinha
 	}
 
 	void setRegistroLinha(RegistroLinha* reg, int cod, char cartao, char* nome, char* cor){
+		// Atualiza o registroLinha com dados passados pela funcao
+
 		reg->codLinha = cod;
 		reg->aceitaCartao = cartao;
 		
@@ -573,40 +606,14 @@ struct cabecalhoLinha
 		reg->corLinha = (char*)malloc(sizeof(char)*reg->tamanhoCor+1);
 		strcpy(reg->corLinha, cor);
 	}
-	/*
-	void solveRemovedLinha(char* prefix) {
-		int tam = strlen(prefix);
 
-		for (int i = 0; i < tam-1; i++) {
-			prefix[i] = prefix[i+1];
-		}
-		prefix[tam-1] = '\0';
-	}
-
-	void atualizaBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp){
-		int tam;
-		char removido;
-
-		if (v->prefixo[0] == '*') {
-			solveRemovedLinha(v->prefixo);
-			h->nroRegistrosRemovidos++;
-			removido = '0'; 
-		}
-		else  {
-			h->nroRegistros++;
-			removido = '1';
-		}
-
-		tam = escrita(v, removido, h->byteProxReg, binario);
-
-		h->byteProxReg = h->byteProxReg + tam;
-	}
-	*/
-	
 	int funcionalidade8(FILE* fpBin, int qtdRegistros){
+		// Le os registros e os adiciona no arquivo binario
+
 		RegistroLinha* reg = criaRegistroLinha();
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
 		if(h->status == '0'){
+			// verificacao de status
 			printf("Falha no processamento do arquivo.\n");
 			return 0;
 		}
@@ -619,11 +626,15 @@ struct cabecalhoLinha
 
 		for(int i = 0; i < qtdRegistros; i++){
 			scanf("%s ", codNaoTratado);
-			if(codNaoTratado[0] = '*'){
+
+			// Tratamento de registro removido
+			if(codNaoTratado[0] == '*'){
 				reg->removido = '0';
 				codNaoTratado[0] = codNaoTratado[1];
 				codNaoTratado[1] = codNaoTratado[2];
 				codNaoTratado[2] = '\0';
+			}else{
+				reg->removido = '1';
 			}
 			cod = atoi(codNaoTratado);
 
@@ -633,7 +644,9 @@ struct cabecalhoLinha
 
 			setRegistroLinha(reg, cod, cartao[0], nome, cor);
 
-			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			//atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			atualizaHeaderLinha(h, fpBin);
+			h->byteProxReg += escreveRegistroLinha(reg, h->byteProxReg, fpBin);
 			liberaRegistroLinha(reg);
 			reg = criaRegistroLinha();
 

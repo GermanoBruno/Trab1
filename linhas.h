@@ -31,7 +31,7 @@ int leRegistroLinhaCsv(RegistroLinha* reg, FILE* fp);
 void liberaRegistroLinha(RegistroLinha* reg);
 void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp);
 void imprimeRegistroLinha(RegistroLinha* reg);
-int escreveRegistroLinha(RegistroLinha* reg, char removido, int byteProxReg, FILE* fp);
+int escreveRegistroLinha(RegistroLinha* reg, int byteProxReg, FILE* fp);
 // AINDA NÃO TERMINEI A PARTIR DAQUI
 int leRegistroLinha(RegistroLinha* reg, FILE* fp);
 void buscaRegistroLinha(FILE* fp);

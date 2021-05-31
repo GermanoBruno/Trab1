@@ -452,11 +452,12 @@ void imprimeVeiculo(RegistroVeiculo* v) {
 	if (v->tamanhoModelo) printf("%s\n", v->modelo);
 	else printf("campo com valor nulo\n");
 
-	if (v->tamanhoCategoria) printf("Categoria do veiculo: %s\n", v->categoria);
+	printf("Categoria do veiculo: ");
+	if (v->tamanhoCategoria) printf("%s\n", v->categoria);
 	else printf("campo com valor nulo\n");
 
 	printf("Data de entrada do veiculo na frota: ");
-	if (v->data[1] == '@') printf("campo com valor nulo\n");
+	if (v->data[0] == '\0') printf("campo com valor nulo\n");
 	else printData(v->data);
 
 	if (v->quatidadeLugares != -1) printf("Quantidade de lugares sentados disponiveis: %d\n", v->quatidadeLugares);
@@ -468,33 +469,88 @@ void imprimeVeiculo(RegistroVeiculo* v) {
 // Funcionalidade 3: Imprimir os registros de um arquivo binario
 void func3(FILE* binario) {
 
-	char removido;
-	int tam;
+	char removido, prefixo[6], data[11], *modelo, *categoria;
+	int tam, qtdlug, tamodelo, tamcategoria, codlinha;// fdata = 0;
+	int flag = 0;
 	HeaderVeiculo* h = criarHeader();
-
+	//printf("É aqui??\n");
 	readHeaderBin(h, binario);
-	
 	if(h->status == '0'){
 		printf("Falha no processamento do arquivo.\n");
 		return;
 	}
-	
+	//printf("Ou aqui??\n");
+
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
 		return;
 	}
 
-	// Enquanto ainda não chegamos no fim do arquivo
 	while (check(binario)) {
+		fread(&(removido), sizeof(char), 1, binario);
 		
-		RegistroVeiculo* v = create();
-		leituraBinario(binario, v, &removido, &tam);
-		imprimeVeiculo(v);
-		libera(v);
+		if (removido == '0') {
+			fread(&(tam), sizeof(int), 1, binario);
+			fseek(binario, tam, SEEK_CUR);
+			continue;
+			
+		}  
+
+		fread(&(tam), sizeof(int), 1, binario);
+		flag = 1;
+
+		fread(prefixo, sizeof(char), 5, binario);
+		prefixo[5] = '\0';
+
+		fread(data, sizeof(char), 10, binario);
+		data[10] = '\0';
+		//if (data[1] == '@') fdata = 1;
+
+		fread(&(qtdlug), sizeof(int), 1, binario);
+
+		fread(&(codlinha), sizeof(int), 1, binario);
+
+		fread(&(tamodelo), sizeof(int), 1, binario);
+		if (tamodelo != 0) {
+			
+			modelo = (char*)malloc(sizeof(char) * tamodelo + 1); 
+			fread(modelo, sizeof(char), tamodelo, binario);
+			modelo[tamodelo] = '\0';
+		
+		}
+
+		fread(&(tamcategoria), sizeof(int), 1, binario);
+		if (tamcategoria != 0) {
+			
+			categoria = (char*)malloc(sizeof(char) * tamcategoria + 1); 
+			fread(categoria, sizeof(char), tamcategoria, binario);
+			categoria[tamcategoria] = '\0';
+		
+		}
+		
+
+		printf("Prefixo do veiculo: %s\n", prefixo);
+
+		printf("Modelo do veiculo: ");
+		if (tamodelo) printf("%s\n", modelo);
+		else printf("campo com valor nulo\n");
+
+		if (tamcategoria) printf("Categoria do veiculo: %s\n", categoria);
+		else printf("campo com valor nulo\n");
+
+		printf("Data de entrada do veiculo na frota: ");
+		if (data[1] == '@') printf("campo com valor nulo\n");
+		else printData(data);
+
+		if (qtdlug != -1) printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
+		else printf("campo com valor nulo\n");
+		
+		printf("\n");
+
+		if (tamodelo) free(modelo);
+		if (tamcategoria) free(categoria);
 
 	}
-
-	liberaHeader(h);
 }
 
 // Função auxiliar da funcionalidade 5 que busca por registros de prefixo 'prefixo'
