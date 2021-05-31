@@ -6,6 +6,7 @@
 #include "veiculo.h"
 #include "auxiliares.h"
 
+// Cabeçalho do arquivo de veiculos, contendo seus campos
 struct cabecalhoVeiculo {
 
 	char status;
@@ -20,20 +21,7 @@ struct cabecalhoVeiculo {
 	char descreveCategoria[21];
 };
 
-struct registroVeiculo {
-
-	char prefixo[6];
-	char data[11];
-	int quatidadeLugares;
-	int codLinha;
-	char* modelo;
-	char* categoria;
-	char removido;
-	int tamanhoRegistro;
-	int tamanhoModelo;
-	int tamanhoCategoria;
-};
-
+// Função que cria um ponteiro para cabeçalho de veiculo e inicializa seus campos
 HeaderVeiculo* criarHeader() {
 	HeaderVeiculo* h = (HeaderVeiculo*)malloc(sizeof(HeaderVeiculo));
 	h->status = '0';
@@ -42,6 +30,7 @@ HeaderVeiculo* criarHeader() {
 	h->nroRegistrosRemovidos = 0;
 }
 
+// Função para debug, imprime os campos do cabeçalho h
 void imprimeHeader(HeaderVeiculo* h){
 	printf("Status: %c\n", h->status);
 	printf("byteProxReg: %ld\n", h->byteProxReg);
@@ -54,19 +43,7 @@ void imprimeHeader(HeaderVeiculo* h){
 	printf("descreveCategoria: %s\n", h->descreveCategoria);
 }
 
-void readHeader(HeaderVeiculo* h, FILE* binario) {
-	fread(&(h->status), sizeof(char), 1, binario);
-	fread(&(h->byteProxReg), sizeof(long int), 1, binario);
-	fread(&(h->nroRegistros), sizeof(int), 1, binario);
-	fread(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
-	fread(h->descrevePrefixo, sizeof(char), 18, binario);
-	fread(h->descreveData, sizeof(char), 35, binario);
-	fread(h->descreveLugares, sizeof(char), 42, binario);
-	fread(h->descreveLinha, sizeof(char), 26, binario);
-	fread(h->descreveModelo, sizeof(char), 17, binario);
-	fread(h->descreveCategoria, sizeof(char), 20, binario);
-}
-
+// Função para ler do .csv os campos que descrevem as colunas de dados dos registros
 void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^,],", h->descrevePrefixo);
 	fscanf(fp, "%[^,],", h->descreveData);
@@ -76,6 +53,8 @@ void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 	fscanf(fp, "%[^\n]\n", h->descreveCategoria);
 }
 
+// Função que insere os valores iniciais do cabeçalho h no arquivo binario.
+// Usada no início da funcionalidade 1, quando estamos começando a transferir os dados.
 void setHeader(HeaderVeiculo* h, FILE* binario) {
 
 	fwrite(&(h->status), sizeof(char), 1, binario);
@@ -92,6 +71,7 @@ void setHeader(HeaderVeiculo* h, FILE* binario) {
 	h->byteProxReg = 175;
 }
 
+// Função que lê os campos do cabeçalho 'h' de um arquivo binario  
 void readHeaderBin(HeaderVeiculo* h, FILE* binario) {
 
     fread(&(h->status), sizeof(char), 1, binario);
@@ -106,6 +86,7 @@ void readHeaderBin(HeaderVeiculo* h, FILE* binario) {
     fread(h->descreveCategoria, sizeof(char), 20, binario);
 }
 
+// Função que atualiza as informações do cabeçalho de um arquivo binário após a inserção dos registros
 void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
 
 	fseek(binario, 0, SEEK_SET);
@@ -116,11 +97,28 @@ void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
 	fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
 }
 
+// Função que libera a memória ocupada por um cabeçalho 'h'
 void liberaHeader(HeaderVeiculo* h) {
 
     if (h != NULL) free(h);
 }
 
+// Struct do registro veículo, contendo seus campos
+struct registroVeiculo {
+
+	char prefixo[6];
+	char data[11];
+	int quatidadeLugares;
+	int codLinha;
+	char* modelo;
+	char* categoria;
+	char removido;
+	int tamanhoRegistro;
+	int tamanhoModelo;
+	int tamanhoCategoria;
+};
+
+// Função que cria um ponteiro para veículo 'v', já inicializando seus campos
 RegistroVeiculo* create() {
 
 	RegistroVeiculo *v = (RegistroVeiculo*)malloc(sizeof(RegistroVeiculo));
@@ -135,6 +133,7 @@ RegistroVeiculo* create() {
 	return v;
 }
 
+// Função auxiliar para tratar o caso de registros removidos (com prefixo começando por *)
 void solveRemoved(char* prefix) {
 	int tam = strlen(prefix);
 
@@ -144,6 +143,7 @@ void solveRemoved(char* prefix) {
 	prefix[tam-1] = '\0';
 }
 
+// Função que atribui campos fornecidos pelo usuário para um dado registro 'v'
 void setVeiculo(RegistroVeiculo* v, char* prefixo, char* data, int lug, int codl, char* modelo, char* categoria) {
 
     strcpy(v->prefixo, prefixo);
@@ -160,41 +160,52 @@ void setVeiculo(RegistroVeiculo* v, char* prefixo, char* data, int lug, int codl
     v->categoria[strlen(categoria)] = '\0';
 
 }
+
+// Função que lê os campos de um veículo a partir de um arquivo .csv
 int leitura (FILE* fp, RegistroVeiculo* v) {
-    //if (fscanf(fp, "%[^,],", v->prefixo) == EOF) return 0;
+
     char lixo[5];
     fscanf(fp, "%[^,],", v->prefixo);
     fscanf(fp, "%[^,],", v->data);
-    fscanf(fp, "%d,", &(v->quatidadeLugares));
+    
     fscanf(fp, "%[^,],", lixo);
+    // Se há NULO no lugar do campo, ele recebe -1
+    if (strcmp(lixo, "NULO") == 0) v->quatidadeLugares = -1;
+    else {
+        v->quatidadeLugares = atoi(lixo);
+    }
+
+    fscanf(fp, "%[^,],", lixo);
+    // Se há NULO no lugar do campo, ele recebe -1
     if (strcmp(lixo, "NULO") == 0) v->codLinha = -1;
     else {
         v->codLinha = atoi(lixo);
     }
-    //fscanf(fp, "%d,", &(v->codLinha));
+    
     fscanf(fp, "%m[^,],", &(v->modelo));
     fscanf(fp, "%m[^\n]\n", &(v->categoria));
 
     return 1;
 }
 
+// Função que escreve os campos de um dado registro 'v' num arquivo binario, a partir do byte 'byteProxReg'
 int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) {
 
-	// NEM tamodelo NEM tamcateogoria SAO NECESSARIOS!!! USAR OS PROPRIOS CAMPOS DO VEICULO
     int flagm = 0;
     int flagc = 0;
     int tam = 31;
 
-    //if (removido == '0') tam--;
-
+    // Se há NULO, marcamos isso para usar no código mais à frente
     if (strcmp(v->modelo, "NULO") == 0) {
         flagm = 1;
     } 
+    // Senão, adicionamos o tamanho do campo ao tamanho do registro 
     else {
         v->tamanhoModelo = strlen(v->modelo);
         tam += v->tamanhoModelo;
     }
 
+    // O mesmo aqui
     if (strcmp(v->categoria, "NULO") == 0) {
         flagc = 1;
     } 
@@ -203,16 +214,20 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         tam += v->tamanhoCategoria;
     }
 
+    // Desloca-se o ponteiro para o byte em que começaremos a inserir
     fseek(binario, byteProxReg, SEEK_SET);
 
     fwrite(&(removido), sizeof(char), 1, binario);
     fwrite(&(tam), sizeof(int), 1, binario);
     fwrite(v->prefixo, sizeof(char), 5, binario);
 
+    // A partir daqui começam as verificações de validade ou não dos campos,
+    // por isso as flags marcadas anteriormente
     if (v->data[0] == 'N') {
 
         char lixo = '\0';
         fwrite(&lixo, sizeof(char), 1, binario);
+        
         lixo = '@';
         for (int i = 0; i < 9; i++) {
             fwrite(&lixo, sizeof(char), 1, binario); 
@@ -222,15 +237,7 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         fwrite(v->data, sizeof(char), strlen(v->data), binario); 
     }
 
-
-    if (v->quatidadeLugares == 0) {
-
-        int lixo = -1;
-        fwrite(&(lixo), sizeof(int), 1, binario);
-
-    } else {
-        fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
-    }
+    fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
 
     fwrite(&(v->codLinha), sizeof(int), 1, binario); 
 
@@ -242,6 +249,7 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         fwrite(&(v->tamanhoModelo), sizeof(int), 1, binario);
         fwrite(v->modelo, sizeof(char), v->tamanhoModelo, binario); 
     }
+
     if (flagc == 1) {
         int tam = 0;
         fwrite(&tam, sizeof(int), 1, binario);
@@ -250,10 +258,14 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         fwrite(v->categoria, sizeof(char), v->tamanhoCategoria, binario); 
     }
 
+    // Retornamos o tamanho do registro somado aos bytes de 'removido' e 'tamanho do registro'
+    // para deslocar corretamente o ponteiro na próxima inserção
     int total = tam + 5;
+
     return total;
 }
 
+// Função maior de escrita no arquivo binário. Usa como base a função 'escrita' anterior.
 void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
 	int tam;
@@ -271,11 +283,11 @@ void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
 	tam = escrita(v, removido, h->byteProxReg, binario);
 
-	
 	h->byteProxReg = h->byteProxReg + tam;
-	//printf("bpr = %ld\n", h->byteProxReg);
+	
 }
 
+// Função que libera o espaço de memória ocupado por um registro 'v' e seus campos
 void libera (RegistroVeiculo* v) {
 
 	if (v != NULL) {
@@ -286,93 +298,7 @@ void libera (RegistroVeiculo* v) {
 	}
 }
 
-void busca (FILE* binario, char* campo, int n) {
-
-	/*	Prefixo do veiculo: BA004
-		Modelo do veiculo: NEOBUS MEGA
-		Categoria do veiculo: ALIMENTADOR
-		Data de entrada do veiculo na frota: 29 de maio de 2009
-		Quantidade de lugares sentados disponiveis: campo com valor nulo
-		--- pule uma linha em branco ---
-	*/
-
-	char removido, prefixo[6], data[11], *modelo, *categoria;
-	int tam, qtdlug, tamodelo, tamcategoria, codlinha, i = 0, fdata = 0;
-	fseek(binario, 175, SEEK_SET);
-
-	while (i < n) {
-		
-		fread(&(removido), sizeof(char), 1, binario);
-		if (removido == '0') {
-			
-			i++;
-			printf("Registro inexistente\n");
-			fread(&(tam), sizeof(int), 1, binario);
-			fseek(binario, tam, SEEK_CUR);
-			continue;
-		}  
-
-		fread(&(tam), sizeof(int), 1, binario);
-		//printf("Tamanho do registro: %d\n", tam);
-
-		fread(prefixo, sizeof(char), 5, binario);
-		prefixo[5] = '\0';
-		//printf("Prefixo do veiculo: %s\n", prefixo);
-
-		fread(data, sizeof(char), 10, binario);
-		data[10] = '\0';
-		if (data[0] == '@') fdata = 1;
-		//printf("Data de entrada do veiculo na frota: %s\n", data);
-
-		fread(&(qtdlug), sizeof(int), 1, binario);
-		//printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
-
-		fread(&(codlinha), sizeof(int), 1, binario);
-		//printf("Codigo da linha: %d\n", codlinha);
-
-		fread(&(tamodelo), sizeof(int), 1, binario);
-		if (tamodelo != 0) {
-			
-			modelo = (char*)malloc(sizeof(char) * tamodelo + 1); 
-			fread(modelo, sizeof(char), tamodelo, binario);
-			modelo[tamodelo] = '\0';
-		
-		}
-		//printf("Modelo do veiculo: %s\n", modelo);
-
-		fread(&(tamcategoria), sizeof(int), 1, binario);
-		categoria = (char*)malloc(sizeof(char) * tamcategoria + 1); 
-		fread(categoria, sizeof(char), tamcategoria, binario);
-		categoria[tamcategoria] = '\0';
-		//printf("Categoria do veiculo: %s\n", categoria);
-
-		if (strcmp(campo, prefixo) == 0) {
-
-			printf("Tamanho do registro: %d\n", tam);
-			printf("Prefixo do veiculo: %s\n", prefixo);
-			printf("Data de entrada do veiculo na frota: ");
-			if (fdata) printf("NULO\n");
-			else printf("%s\n", data);
-
-			printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
-			printf("Codigo da linha: %d\n", codlinha);
-
-			printf("Modelo do veiculo: ");
-			if (tamodelo) printf("%s\n", modelo);
-			else printf("NULO\n");
-			printf("Categoria do veiculo: %s\n", categoria);
-			printf("\n");
-
-		}
-
-		if (tamodelo) free(modelo);
-		free(categoria);
-
-		i++;
-
-	}
-}
-
+// Função auxiliar que checa se chegamos ao fim do arquivo
 int check(FILE* fp) {
 	
 	char check;
@@ -384,29 +310,29 @@ int check(FILE* fp) {
    	return 1;
 }
 
+// Funcionalidade 1: Transferencia de dados do arquivo .csv para o binario
 void func1(FILE* fp, FILE* binario) {
-	//FILE *fp, *binario;
+
 	HeaderVeiculo* h = criarHeader();
 	
-	//fp = fopen(csv, "r");
 	descreveHeader(h, fp);
-	//binario = fopen(bin, "w+b");
 	setHeader(h, binario);
 	
-	//int i = 0;
-	while (check(fp)) { 	// Fazer função pra ler até o fim do arquivo depois
+	// Enquanto não chegamos no fim do arquivo
+	while (check(fp)) {
 		
 		RegistroVeiculo* v = create();
 		leitura(fp, v);
 		atualizaBinario(h, v, binario);
 		libera(v);
-		//i++;
 
 	}
+
 	atualizaHeader(h, binario);
 	liberaHeader(h);
 }
 
+// Função auxiliar que traduz o formato da data lida (AAAA-MM-DD) para o exigido pelo trabalho 
 void printData(char* data) {
 
 
@@ -471,99 +397,12 @@ void printData(char* data) {
 	}
 }
 
-void func3(FILE* binario) {
-
-	//FILE *binario;
-	//binario = fopen(bin, "rb");
-
-	char removido, prefixo[6], data[11], *modelo, *categoria;
-	int tam, qtdlug, tamodelo, tamcategoria, codlinha;// fdata = 0;
-	int flag = 0;
-	HeaderVeiculo* h = criarHeader();
-	//printf("É aqui??\n");
-	readHeaderBin(h, binario);
-	if(h->status == '0'){
-		printf("Falha no processamento do arquivo.\n");
-		return;
-	}
-	//printf("Ou aqui??\n");
-
-	if(h->nroRegistros == 0){
-		printf("Registro inexistente.\n");
-		return;
-	}
-
-	while (check(binario)) {
-		fread(&(removido), sizeof(char), 1, binario);
-		
-		if (removido == '0') {
-			fread(&(tam), sizeof(int), 1, binario);
-			fseek(binario, tam, SEEK_CUR);
-			continue;
-			
-		}  
-
-		fread(&(tam), sizeof(int), 1, binario);
-		flag = 1;
-
-		fread(prefixo, sizeof(char), 5, binario);
-		prefixo[5] = '\0';
-
-		fread(data, sizeof(char), 10, binario);
-		data[10] = '\0';
-		//if (data[1] == '@') fdata = 1;
-
-		fread(&(qtdlug), sizeof(int), 1, binario);
-
-		fread(&(codlinha), sizeof(int), 1, binario);
-
-		fread(&(tamodelo), sizeof(int), 1, binario);
-		if (tamodelo != 0) {
-			
-			modelo = (char*)malloc(sizeof(char) * tamodelo + 1); 
-			fread(modelo, sizeof(char), tamodelo, binario);
-			modelo[tamodelo] = '\0';
-		
-		}
-
-		fread(&(tamcategoria), sizeof(int), 1, binario);
-		if (tamcategoria != 0) {
-			
-			categoria = (char*)malloc(sizeof(char) * tamcategoria + 1); 
-			fread(categoria, sizeof(char), tamcategoria, binario);
-			categoria[tamcategoria] = '\0';
-		
-		}
-		
-
-		printf("Prefixo do veiculo: %s\n", prefixo);
-
-		printf("Modelo do veiculo: ");
-		if (tamodelo) printf("%s\n", modelo);
-		else printf("campo com valor nulo\n");
-
-		if (tamcategoria) printf("Categoria do veiculo: %s\n", categoria);
-		else printf("campo com valor nulo\n");
-
-		printf("Data de entrada do veiculo na frota: ");
-		if (data[1] == '@') printf("campo com valor nulo\n");
-		else printData(data);
-
-		if (qtdlug != -1) printf("Quantidade de lugares sentados disponiveis: %d\n", qtdlug);
-		else printf("campo com valor nulo\n");
-		
-		printf("\n");
-
-		if (tamodelo) free(modelo);
-		if (tamcategoria) free(categoria);
-
-	}
-}
-
+// Função auxiliar para ler os campos de um registro 'v' a partir de um arquivo binário
 void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam) {
 
 	fread(removido, sizeof(char), 1, binario);
 		
+		// Se o registro está removido, deslocamos o ponteiro para o próximo registro
 		if (*removido == '0') {
 			
 			fread(tam, sizeof(int), 1, binario);
@@ -572,6 +411,7 @@ void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam
 			
 		}  
 
+		// Daqui em diante lemos os campos do registro
 		fread(tam, sizeof(int), 1, binario);
 
 		fread(v->prefixo, sizeof(char), 5, binario);
@@ -579,7 +419,6 @@ void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam
 
 		fread(v->data, sizeof(char), 10, binario);
 		v->data[10] = '\0';
-		//if (data[1] == '@') fdata = 1;
 
 		fread(&(v->quatidadeLugares), sizeof(int), 1, binario);
 
@@ -604,6 +443,7 @@ void leituraBinario (FILE* binario, RegistroVeiculo* v, char* removido, int* tam
 		}
 }
 
+// Função para imprimir os campos de um dado veículo 'v'
 void imprimeVeiculo(RegistroVeiculo* v) {
 
 	printf("Prefixo do veiculo: %s\n", v->prefixo);
@@ -625,12 +465,46 @@ void imprimeVeiculo(RegistroVeiculo* v) {
 	printf("\n");
 }
 
+// Funcionalidade 3: Imprimir os registros de um arquivo binario
+void func3(FILE* binario) {
+
+	char removido;
+	int tam;
+	HeaderVeiculo* h = criarHeader();
+
+	readHeaderBin(h, binario);
+	
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
+	
+	if(h->nroRegistros == 0){
+		printf("Registro inexistente.\n");
+		return;
+	}
+
+	// Enquanto ainda não chegamos no fim do arquivo
+	while (check(binario)) {
+		
+		RegistroVeiculo* v = create();
+		leituraBinario(binario, v, &removido, &tam);
+		imprimeVeiculo(v);
+		libera(v);
+
+	}
+
+	liberaHeader(h);
+}
+
+// Função auxiliar da funcionalidade 5 que busca por registros de prefixo 'prefixo'
 void busca_prefixo (FILE* binario, char* prefixo) {
 
 	char removido; int tam;
 	HeaderVeiculo* h = criarHeader();
 
 	readHeaderBin(h, binario);
+
 	if(h->status == '0'){
 		printf("Falha no processamento do arquivo.\n");
 		return;
@@ -643,22 +517,29 @@ void busca_prefixo (FILE* binario, char* prefixo) {
 
 	RegistroVeiculo *v;
 	while (check(binario)){
+
 		v = create();
 		leituraBinario(binario, v, &removido, &tam);
-		if (!removido) continue;
+		
+		if (!removido) {
+			libera(v);
+			continue;
+		}
 
 		if (strcmp(v->prefixo, prefixo) == 0) imprimeVeiculo(v);
 
 		libera(v);
+
 	}
+
 	liberaHeader(h);
 }
 
+// Função auxiliar da funcionalidade 5 que busca por registros de data 'data'
 void busca_data (FILE* binario, char* data) {
 
 	char removido; int tam;
-	HeaderVeiculo* h = criarHeader(); 
-	RegistroVeiculo* v = create();
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v;
 
 	readHeaderBin(h, binario);
 	if(h->status == '0'){
@@ -675,21 +556,26 @@ void busca_data (FILE* binario, char* data) {
 		
 		v = create();
 		leituraBinario(binario, v, &removido, &tam);
-		if (!removido) continue;
+		
+		if (!removido) {
+			libera(v);
+			continue;
+		}
 
 		if (strcmp(v->data, data) == 0) imprimeVeiculo(v);
 
 		libera(v);
+
 	}
 	liberaHeader(h);
 }
 
+// Função auxiliar da funcionalidade 5 que busca por registros com quantidade de lugares 'qtdlug'
 void busca_qtdlug (FILE* binario, int qtdlug) {
 
 	char removido; 
 	int tam;
-	HeaderVeiculo* h = criarHeader();
-	RegistroVeiculo* v;
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v;
 
 	readHeaderBin(h, binario);
 	if(h->status == '0'){
@@ -706,6 +592,7 @@ void busca_qtdlug (FILE* binario, int qtdlug) {
 		
 		v = create();
 		leituraBinario(binario, v, &removido, &tam);
+		
 		if (!removido) {
 			libera(v);
 			continue;
@@ -719,13 +606,19 @@ void busca_qtdlug (FILE* binario, int qtdlug) {
 	liberaHeader(h);
 }
 
+// Função auxiliar da funcionalidade 5 que busca por registros de modelo 'modelo'
 void busca_modelo (FILE* binario, char* modelo) {
 
 	char removido; int tam;
-	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v = create();
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v;
 
 	readHeaderBin(h, binario);
 	
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
+
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
 		return;
@@ -735,7 +628,11 @@ void busca_modelo (FILE* binario, char* modelo) {
 		
 		v = create();
 		leituraBinario(binario, v, &removido, &tam);
-		if (!removido) continue;
+		
+		if (!removido) {
+			libera(v);
+			continue;
+		}
 
 		if (strcmp(v->modelo, modelo) == 0) imprimeVeiculo(v);
 
@@ -744,13 +641,19 @@ void busca_modelo (FILE* binario, char* modelo) {
 	liberaHeader(h);
 }
 
+// Função auxiliar da funcionalidade 5 que busca por registros de categoria 'categoria'
 void busca_categoria (FILE* binario, char* categoria) {
 
 	char removido; int tam;
-	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v = create();
+	HeaderVeiculo* h = criarHeader(); RegistroVeiculo* v;
 
 	readHeaderBin(h, binario);
 	
+	if(h->status == '0'){
+		printf("Falha no processamento do arquivo.\n");
+		return;
+	}
+
 	if(h->nroRegistros == 0){
 		printf("Registro inexistente.\n");
 		return;
@@ -761,7 +664,11 @@ void busca_categoria (FILE* binario, char* categoria) {
 		v = create();
 		
 		leituraBinario(binario, v, &removido, &tam);
-		if (!removido) continue;
+		
+		if (!removido) {
+			libera(v);
+			continue;
+		}
 
 		if (strcmp(v->categoria, categoria) == 0) imprimeVeiculo(v);
 
@@ -770,34 +677,45 @@ void busca_categoria (FILE* binario, char* categoria) {
 	liberaHeader(h);
 }
 
+// Funcionalidade 5: Busca por registros com campo 'nomeDoCampo' de valor 'valor'
 void func5(FILE* binario, char* nomeDoCampo, char* valor) {
 
 	if (strcmp("prefixo", nomeDoCampo) == 0) {
-		//Funcao fornecida pra ler o campo
 		busca_prefixo(binario, valor);
-	}else if (strcmp("quantidadeLugares", nomeDoCampo) == 0) {
-		int qtd = atoi(valor);
+	}
+	else if (strcmp("quantidadeLugares", nomeDoCampo) == 0) {
+		
+		int qtd;
+		
+		if (strcmp(valor, "NULO") == 0) qtd = -1;
+		else qtd = atoi(valor);
+		
 		busca_qtdlug(binario, qtd);
-	}else if (strcmp("modelo", nomeDoCampo) == 0) {
+	
+	}
+	else if (strcmp("modelo", nomeDoCampo) == 0) {
 		busca_modelo(binario, valor);
-	}else if (strcmp("data", nomeDoCampo) == 0) {
+	}
+	else if (strcmp("data", nomeDoCampo) == 0) {
 		busca_data(binario, valor);
-	}else if (strcmp("categoria", nomeDoCampo) == 0) {
+	}
+	else if (strcmp("categoria", nomeDoCampo) == 0) {
 		busca_categoria(binario, valor);
 	}
+
 }
 
+// Funcionalidade 7: Inserir 'n' registros em um arquivo binário 
 int func7(FILE* binario, int n) {
-	//FILE *fp, binario;
+
 	HeaderVeiculo* h = criarHeader();
 
-	readHeader(h, binario);
+	readHeaderBin(h, binario);
+	
 	if(h->status == '0'){
 		printf("Falha no processamento do arquivo.\n");
 		return 0;
 	}
-	//imprimeHeader(h);
-	//printf("Bpr = %ld\n", h->byteProxReg);
 
 	char prefixo[7];
 	char data[12];
@@ -810,48 +728,55 @@ int func7(FILE* binario, int n) {
 	int i = 0;
 
 	while (i < n) { 
+		
 		RegistroVeiculo* v = create();
 		
-		//Ler direito
 		scan_quote_string(prefixo);
+		
 		scan_quote_string(data);
+		
 		if(strcmp(data, "") == 0){
 			strcpy(data, "NULO");
 		}
+		
 		scanf("%s %s", lugNaoTratado, codNaoTratado);
+		
 		if((lugNaoTratado[0] == 'N') || (lugNaoTratado[0] == 'n')){
 			lug = -1;
 		}else{
 			lug = atoi(lugNaoTratado);
 		}
+
 		if((codNaoTratado[0] == 'N') || (codNaoTratado[0] == 'n')){
 			codl = -1;
 		}else{
 			codl = atoi(codNaoTratado);
 		}
+		
 		scan_quote_string(modelo);
+		
 		if(strcmp(modelo, "") == 0){
 			strcpy(modelo, "NULO");
 		}
+		
 		scan_quote_string(categoria);
+		
 		if(strcmp(categoria, "") == 0){
 			strcpy(categoria, "NULO");
 		}
-		/*printf("pref: %s\n", prefixo);
-		printf("data: %s\n", data);
-		printf("lug: %d\n", lug);
-		printf("cod: %d\n", codl);
-		printf("mod: %s\n", modelo);
-		printf("cat: %s\n", categoria);*/
 		
 		setVeiculo(v, prefixo, data, lug, codl, modelo, categoria);
 		atualizaBinario(h, v, binario);
-		//imprimeVeiculo(v);
+
 		libera(v);
+		
 		i++;
+	
 	}
+
 	atualizaHeader(h, binario);
 
 	liberaHeader(h);
+	
 	return 1;
 }
