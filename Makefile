@@ -64,7 +64,6 @@ test15:
 test16: 
 	./program < testes/16.in > testes/teste16.out 
 	diff testes/teste16.out testes/16.out
-
 test:
 	./program < testes/1.in > testes/teste1.out 
 	diff testes/teste1.out testes/1.out 

@@ -25,8 +25,12 @@ int main(int argc, char const *argv[])
 			// Leitura do veiculo.csv
 			scanf("%s %s", nomeArquivoCsv, nomeArquivoBinario);
 			fpCsv = fopen(nomeArquivoCsv, "r");
+			if(fpCsv == NULL){
+				printf("Falha no processamento do arquivo.\n");
+				return 0;
+			}
 			fpBin = fopen(nomeArquivoBinario, "wb+");
-			if((fpCsv == NULL) || (fpBin == NULL)){
+			if(fpBin == NULL){
 				printf("Falha no processamento do arquivo.\n");
 				return 0;
 			}
@@ -43,8 +47,12 @@ int main(int argc, char const *argv[])
 			// Leitura de linha.csv
 			scanf("%s %s", nomeArquivoCsv, nomeArquivoBinario);
 			fpCsv = fopen(nomeArquivoCsv, "r");
+			if(fpCsv == NULL){
+				printf("Falha no processamento do arquivo.\n");
+				return 0;
+			}
 			fpBin = fopen(nomeArquivoBinario, "wb+");
-			if((fpCsv == NULL) || (fpBin == NULL)){
+			if(fpBin == NULL){
 				printf("Falha no processamento do arquivo.\n");
 				return 0;
 			}
