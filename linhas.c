@@ -4,36 +4,36 @@
 #include "linhas.h"
 #include "auxiliares.h"
 
+// Structs
+	struct registroLinha
+	{
+		// Registro de tamanho variável
+		char  removido; 		// 1 byte
+		int   tamanhoRegistro;  // 4 bytes
 
-struct registroLinha
-{
-	// Registro de tamanho variável
-	char  removido; 		// 1 byte
-	int   tamanhoRegistro;  // 4 bytes
+		// Não pode ser nulo
+		int   codLinha; 		// 4 bytes
+		char  aceitaCartao;		// 1 byte
+		
+		int   tamanhoNome; 		// 4 bytes
+		char* nomeLinha;		// variavel
 
-	// Não pode ser nulo
-	int   codLinha; 		// 4 bytes
-	char  aceitaCartao;		// 1 byte
-	
-	int   tamanhoNome; 		// 4 bytes
-	char* nomeLinha;		// variavel
-
-	int   tamanhoCor;		// 4 bytes
-	char* corLinha; 		// variavel
-};
-struct cabecalhoLinha
-{
-	// Tamanho fixo
-	// Total: 82 Bytes
-	char 	 status; 				//  1 byte
-	long int byteProxReg;			//  8 bytes
-	int 	 nroRegistros; 			//  4 bytes
-	int 	 nroRegistrosRemovidos;	//  4 bytes
-	char 	 descreveCodigo[16];	// 15 bytes
-	char 	 descreveCartao[14];	// 13 bytes
-	char 	 descreveNome[14];		// 13 bytes
-	char 	 descreveCor[25]; 		// 24 bytes
-};
+		int   tamanhoCor;		// 4 bytes
+		char* corLinha; 		// variavel
+	};
+	struct cabecalhoLinha
+	{
+		// Tamanho fixo
+		// Total: 82 Bytes
+		char 	 status; 				//  1 byte
+		long int byteProxReg;			//  8 bytes
+		int 	 nroRegistros; 			//  4 bytes
+		int 	 nroRegistrosRemovidos;	//  4 bytes
+		char 	 descreveCodigo[16];	// 15 bytes
+		char 	 descreveCartao[14];	// 13 bytes
+		char 	 descreveNome[14];		// 13 bytes
+		char 	 descreveCor[25]; 		// 24 bytes
+	};
 
 
 // Cabeçalho
@@ -268,7 +268,6 @@ struct cabecalhoLinha
             printDebugCabecalhoLinha(h);
         }
     }
-	
 
 	void imprimeRegistroLinha(RegistroLinha* reg){
 		// Imprime o registroLinha de acordo com a especificacao dada
@@ -392,6 +391,7 @@ struct cabecalhoLinha
 		printf("Cor: %s\n\n", reg->corLinha);
 	}
 
+// auxiliares
 	int checkFile(FILE* fp) {
 		// Funcao para verificar se o arquivo terminou
 
@@ -400,74 +400,6 @@ struct cabecalhoLinha
 	    fseek(fp, -sizeof(char), SEEK_CUR);
    		return 1;
 	}
-
-// Funcionalidades
-	void funcionalidade2(FILE* fpCsv, FILE* fpBin){
-		// Escrita dos registros num binario
-
-		// Cria as structs
-		HeaderLinha* h  = criarHeaderLinha();
-		RegistroLinha* reg = criaRegistroLinha();
-		if(DEBUG){
-			printf("Func2 criou structs\n\n");
-		}
-
-		// Le e escreve o cabecalho
-		leituraCabecalhoLinhaCsv(h, fpCsv);
-		escritaCabecalhoLinha(h, fpBin);
-		if(DEBUG){
-			printf("Func2 leu e escreveu o cabecalho\n\n");
-		}
-
-		// Le e escreve cada registro
-		while(checkFile(fpCsv)){
-			leRegistroLinhaCsv(reg, fpCsv);
-			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			liberaRegistroLinha(reg);			
-			reg = criaRegistroLinha();
-		}
-		atualizaHeaderLinha(h, fpBin);
-		liberaCabecalhoLinha(h);
-		liberaRegistroLinha(reg);
-
-		if(DEBUG){
-			printf("Func2 terminou\n\n");
-		}
-	}
-
-	void funcionalidade4(FILE* fpBin){
-		// Le o arquivo binario e imprime todos os registros não removidos
-
-	 	RegistroLinha* reg = criaRegistroLinha();
-	 	HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
-	 	if(h->status == '0'){
-	 		// verificacao de status
-			printf("Falha no processamento do arquivo.\n");
-		}
-	 	if(DEBUG){
-			printf("Func4 criou struct\n");
-		}	
-		if(h->nroRegistros == 0){
-			// Se não houver registros, não tem o que imprimir
-			printf("Registro inexistente.\n");
-			return;
-		}
-		while(checkFile(fpBin)){
-			// Se o arquivo não terminou, le os registros e imprime
-			leRegistroLinha(reg, fpBin);
-			imprimeRegistroLinha(reg);
-			liberaRegistroLinha(reg);
-			reg = criaRegistroLinha();
-
-		}
-		atualizaHeaderLinha(h, fpBin);
-		liberaCabecalhoLinha(h);
-		liberaRegistroLinha(reg);
-		if(DEBUG){
-			printf("Func4 terminou\n");
-		}
-	}
-
 	void buscaCartao(FILE* fp, char* valor){
 		// Imprime os registros com aceitaCartao igual ao valor passado
 		HeaderLinha* h = leituraCabecalhoLinhaBinario(fp);
@@ -576,6 +508,95 @@ struct cabecalhoLinha
 		}
 		liberaCabecalhoLinha(h);
 	}
+	void setRegistroLinha(RegistroLinha* reg, int cod, char cartao, char* nome, char* cor){
+		// Atualiza o registroLinha com dados passados pela funcao
+
+		reg->codLinha = cod;
+		reg->aceitaCartao = cartao;
+		
+		reg->tamanhoNome = strlen(nome);
+		reg->nomeLinha = (char*)malloc(sizeof(char)*reg->tamanhoNome+1);
+		strcpy(reg->nomeLinha, nome);
+
+		reg->tamanhoCor = strlen(cor);
+		reg->corLinha = (char*)malloc(sizeof(char)*reg->tamanhoCor+1);
+		strcpy(reg->corLinha, cor);
+
+		reg->tamanhoRegistro = 13 + reg->tamanhoCor + reg->tamanhoNome;
+	}
+
+// Funcionalidades
+	void funcionalidade2(FILE* fpCsv, FILE* fpBin){
+		// Escrita dos registros num binario
+
+		// Cria as structs
+		HeaderLinha* h  = criarHeaderLinha();
+		RegistroLinha* reg = criaRegistroLinha();
+		if(DEBUG){
+			printf("Func2 criou structs\n\n");
+		}
+
+		// Le e escreve o cabecalho
+		leituraCabecalhoLinhaCsv(h, fpCsv);
+		escritaCabecalhoLinha(h, fpBin);
+		if(DEBUG){
+			printf("Func2 leu e escreveu o cabecalho\n\n");
+		}
+
+		// Le e escreve cada registro
+		while(checkFile(fpCsv)){
+			leRegistroLinhaCsv(reg, fpCsv);
+			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			liberaRegistroLinha(reg);			
+			reg = criaRegistroLinha();
+		}
+		atualizaHeaderLinha(h, fpBin);
+		liberaCabecalhoLinha(h);
+		liberaRegistroLinha(reg);
+
+		if(DEBUG){
+			printf("Func2 terminou\n\n");
+		}
+	}
+
+	void funcionalidade4(FILE* fpBin){
+		// Le o arquivo binario e imprime todos os registros não removidos
+
+	 	RegistroLinha* reg = criaRegistroLinha();
+	 	HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
+	 	if(h->status == '0'){
+	 		// verificacao de status
+			printf("Falha no processamento do arquivo.\n");
+			liberaCabecalhoLinha(h);
+			liberaRegistroLinha(reg);
+			return;
+
+		}
+	 	if(DEBUG){
+			printf("Func4 criou struct\n");
+		}	
+		if(h->nroRegistros == 0){
+			// Se não houver registros, não tem o que imprimir
+			printf("Registro inexistente.\n");
+			liberaCabecalhoLinha(h);
+			liberaRegistroLinha(reg);
+			return;
+		}
+		while(checkFile(fpBin)){
+			// Se o arquivo não terminou, le os registros e imprime
+			leRegistroLinha(reg, fpBin);
+			imprimeRegistroLinha(reg);
+			liberaRegistroLinha(reg);
+			reg = criaRegistroLinha();
+
+		}
+		atualizaHeaderLinha(h, fpBin);
+		liberaCabecalhoLinha(h);
+		liberaRegistroLinha(reg);
+		if(DEBUG){
+			printf("Func4 terminou\n");
+		}
+	}
 
 	void funcionalidade6(FILE* fpBin, char* nomeDoCampo, char* valor){
 		// Verifica qual o nome do campo buscado e chama a funcao 
@@ -592,21 +613,6 @@ struct cabecalhoLinha
 		}
 	}
 
-	void setRegistroLinha(RegistroLinha* reg, int cod, char cartao, char* nome, char* cor){
-		// Atualiza o registroLinha com dados passados pela funcao
-
-		reg->codLinha = cod;
-		reg->aceitaCartao = cartao;
-		
-		reg->tamanhoNome = strlen(nome);
-		reg->nomeLinha = (char*)malloc(sizeof(char)*reg->tamanhoNome+1);
-		strcpy(reg->nomeLinha, nome);
-
-		reg->tamanhoCor = strlen(cor);
-		reg->corLinha = (char*)malloc(sizeof(char)*reg->tamanhoCor+1);
-		strcpy(reg->corLinha, cor);
-	}
-
 	int funcionalidade8(FILE* fpBin, int qtdRegistros){
 		// Le os registros e os adiciona no arquivo binario
 
@@ -615,6 +621,8 @@ struct cabecalhoLinha
 		if(h->status == '0'){
 			// verificacao de status
 			printf("Falha no processamento do arquivo.\n");
+			liberaRegistroLinha(reg);
+			liberaCabecalhoLinha(h);
 			return 0;
 		}
 
@@ -644,14 +652,16 @@ struct cabecalhoLinha
 
 			setRegistroLinha(reg, cod, cartao[0], nome, cor);
 
-			//atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			atualizaHeaderLinha(h, fpBin);
-			h->byteProxReg += escreveRegistroLinha(reg, h->byteProxReg, fpBin);
+			//int tamBonus = escreveRegistroLinha(reg, h->byteProxReg, fpBin);
+			//h->byteProxReg += escreveRegistroLinha(reg, h->byteProxReg, fpBin);
+			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+			//atualizaHeaderLinha(h, fpBin);
 			liberaRegistroLinha(reg);
 			reg = criaRegistroLinha();
 
 		}
-
+		//atualizaCabecalhoBinarioLinha(h, reg, fpBin);
+		atualizaHeaderLinha(h, fpBin);
 		liberaRegistroLinha(reg);
 		liberaCabecalhoLinha(h);
 
