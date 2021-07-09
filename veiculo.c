@@ -2,23 +2,458 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-
 #include "veiculo.h"
 #include "auxiliares.h"
+
+#define ERROR -1 // valor de retorno da função pageInsert quando já existe um elemento a ser inserido
+#define PROMOTION 1 // valor de retorno da função pageInsert quando uma chave é promovida
+#define NOPROMOTION 0 // valor de retorno da função pageInsert quando não há promoção
+
+// Estrutura da página de disco
+struct PAGE {
+
+	char leaf; // flag que indica se o nó é folha ou não
+	int RRN; // RRN da página
+	int count; // número de chaves armazenadas na página
+	int C[4]; // vetor de chaves
+	long int PR[4]; // vetor de ponteiros de referência para o arquivo de dados
+	int P[5]; // vetor de filhos
+};
+
+// Função que insere as informações do cabeçalho do arquivo de índice
+void writeHeader(FILE* bin, char status, int rootRRN, int proxRRN) {
+
+	fseek(bin, 0, SEEK_SET);
+	fwrite(&(status), sizeof(char), 1, bin); // status do arquivo
+	fwrite(&(rootRRN), sizeof(int), 1, bin); // RRN da raiz
+	fwrite(&(proxRRN), sizeof(int), 1, bin); // RRN do prox nó
+	
+	// O resto do espaço é reservado para o lixo
+	char lixo = '@';
+	for (int i = 0; i < 68; i++) {
+		fwrite(&(lixo), sizeof(char), 1, bin);
+	}
+
+}
+
+// Função de criação da página, assume que o nó é uma folha inicialmente
+page* createPage() {
+
+	page* pag = (page*)malloc(sizeof(page));
+	pag->leaf = '1';
+	pag->count = 0;
+	pag->RRN = -1;
+
+	// Os valores são inicializados por -1
+	for (int i = 0; i < 4; i++) {
+		pag->C[i] = -1;
+		pag->PR[i] = -1;
+		pag->P[i] = -1;
+	}
+	pag->P[4] = -1;
+
+	return pag;
+}
+
+// Função auxiliar que indica se uma página tem filhos ou não
+int hasChilds(page* pag) {
+
+	for (int i = 0; i < pag->count+1; i++) {
+		if (pag->P[i] != -1) return 1;
+	}
+
+	return 0;
+}
+
+// Função auxiliar para resetar os valores de uma página, a fim de receber
+// novos valores caso participe do split na inserção
+void resetPage(page* pag) {
+
+	pag->count = 0;
+
+	for (int i = 0; i < 4; i++) {
+		pag->C[i] = -1;
+		pag->PR[i] = -1;
+		pag->P[i] = -1;
+	}
+	pag->P[4] = -1;
+
+}
+
+// TROCAR POR OUTRA COISA!!!!!!!!!!!!!!!!
+int getRRN(page* p) {
+	return p->RRN;
+}
+
+// Função que escreve os valores de uma dada página no arquivo de índice
+void writePage(FILE* bin, page* pag) {
+
+	fwrite(&(pag->leaf), sizeof(char), 1, bin);
+	fwrite(&(pag->count), sizeof(int), 1, bin);
+	fwrite(&(pag->RRN), sizeof(int), 1, bin);
+
+	for (int i = 0; i < 4; i++) {
+		fwrite(&(pag->P[i]), sizeof(int), 1, bin);
+		fwrite(&(pag->C[i]), sizeof(int), 1, bin);
+		fwrite(&(pag->PR[i]), sizeof(long int), 1, bin);
+	}
+	fwrite(&(pag->P[4]), sizeof(int), 1, bin);
+
+}
+
+// Função que lê os valores de uma dada página do arquivo de índice
+void readPage(FILE* bin, page* pag) {
+
+	fread(&(pag->leaf), sizeof(char), 1, bin);
+	fread(&(pag->count), sizeof(int), 1, bin);
+	fread(&(pag->RRN), sizeof(int), 1, bin);
+
+	for (int i = 0; i < 4; i++) {
+		fread(&(pag->P[i]), sizeof(int), 1, bin);
+		fread(&(pag->C[i]), sizeof(int), 1, bin);
+		fread(&(pag->PR[i]), sizeof(long int), 1, bin);
+	}
+	fread(&(pag->P[4]), sizeof(int), 1, bin);
+
+}
+
+// Função auxiliar para imprimir os valores de uma dada página
+void printPage(page* pag) {
+
+	int i;
+	for (i = 0; i < pag->count; i++) {
+		printf("%d %d %ld ", pag->P[i], pag->C[i], pag->PR[i]);
+	}
+	printf("%d", pag->P[i]);
+	printf("\n");
+}
+
+// Função split que participa do processo de inserção, para solucionar o caso de overflow numa página
+void split(page* pag, int* promo_key, long int* promo_PR, int* promo_r_child, page* newpage) {
+
+	int keys[5]; // Vetor auxiliar de chaves com 4+1 espaços para ajustar as posições das chaves
+	long int PRs[5]; // Vetor auxiliar de ponteiros de referência com 4+1 espaços para ajustar as posições dos ponteiros
+	int childs[6]; // Vetor auxiliar de filhos com 5+1 posições para ajustar as posições dos filhos
+
+	// Começamos inserindo os valores da página corrente 'p' nos vetores auxiliares
+	for (int i = 0; i < 4; i++) {
+		keys[i] = pag->C[i];
+		PRs[i] = pag->PR[i];
+		childs[i] = pag->P[i];
+	}
+	childs[4] = pag->P[4];
+
+
+	// Buscamos/ a posição correta da nova chave no vetor auxiliar (consequentemente a do seu ponteiro de referência)
+	int i = 3;
+	while (i >= 0) {
+
+		if (keys[i] < *promo_key) break;
+		keys[i+1] = keys[i];
+		PRs[i+1] = PRs[i];
+		i--;
+	}
+	int pos = i+1;
+
+	// Inserimos a chave e seu ponteiro de referência em suas posições corretas 
+	keys[pos] = *promo_key;
+	PRs[pos] = *promo_PR;
+
+	// Insere os filhos nos lugares devidos, incluindo o da chave promovida
+	for (int i = 4; i >= pos+1; i--) {
+		childs[i+1] = childs[i];
+	}
+	childs[pos+1] = *promo_r_child;
+
+	// Reinicializamos a página corrente para receber os novos valores das
+	// chaves, ponteiros e filhos
+	resetPage(pag);
+
+	// Coloca as chaves que precedem a chave promovida, seus ponteiros e seus filhos na pagina corrente
+	for (int i = 0; i < 2; i++) {
+		pag->C[i] = keys[i];
+		pag->PR[i] = PRs[i];
+		pag->P[i] = childs[i];
+	}
+	pag->P[2] = childs[2];
+	pag->count = 2;
+
+	// Coloca as chaves que sucedem a chave promovida, seus ponteiros e seus filhos na nova pagina
+	for (int i = 3; i < 5; i++) {
+		newpage->C[i-3] = keys[i];
+		newpage->PR[i-3] = PRs[i];
+		newpage->P[i-3] = childs[i];
+	}
+	newpage->P[2] = childs[5];
+	newpage->count = 2;
+
+	// Se alguma das páginas tem filhos, significa que ela não é mais uma folha
+	if (hasChilds(pag)) pag->leaf = '0';
+	if (hasChilds(newpage)) newpage->leaf = '0';
+
+	// Atualiza os dados da promoção: a chave do meio e seu ponteiro de referência, e o RRN do seu filho direito
+	*promo_key = keys[2];
+	*promo_PR = PRs[2];
+	*promo_r_child = newpage->RRN;
+
+}
+
+// Função de inserção de uma chave no arquivo de índice. Recebe como parâmetros principais:
+// |current_rrn| -> RRN atual da instância da função
+// |key| -> chave a ser inserida
+// |PR| -> ponteiro de referência da chave a ser inserida
+// |last_rrn| -> variável auxiliar passada como referência para guardar o último RRN da btree, mantendo a sequência dos RRNs
+int pageInsert(FILE* bin, int current_rrn, int key, long int PR, int* promo_r_child, int* promo_key, long int* promo_PR, int* last_rrn) {
+
+	// Se o RRN atual é -1, significa que viemos de um nó folha,
+	// entao promovemos a chave de volta para ele
+	if (current_rrn == -1) {
+
+		*promo_key = key;
+		*promo_PR = PR;
+		*promo_r_child = -1;
+
+		return PROMOTION;
+	}
+
+	//Desloca o ponteiro do arquivo para o RRN atual
+	fseek(bin, 77*(current_rrn+1), SEEK_SET);
+
+	// Cria uma página auxiliar para ler os campos
+	page* pag = createPage();
+
+	// Variáveis auxiliares para incrementar a iteração, guardar a posicao correta de inserção
+	// e guardar o valor de retorno da instância da função
+	int i, pos, return_value;
+	
+	// Lê os campos
+	readPage(bin, pag);
+
+	// Percorre as chaves da página até uma das condições ser satisfeita:
+	// 1) Achamos uma chave igual à candidata a inserção, logo retornamos ERRO
+	// 2) Achamos uma chave maior que a candidata, logo temos a posicao de inserção, que é antes dessa chave
+	for (i = 0; i < pag->count; i++) {
+		if (pag->C[i] == key) return ERROR;
+		else if (pag->C[i] > key) {
+			break;
+		}
+	}
+	pos = i;
+
+	// Chamada recursiva para o nível mais abaixo, na posição correta de inserção da chave
+	return_value = pageInsert(bin, pag->P[pos], key, PR, promo_r_child, promo_key, promo_PR, last_rrn);
+
+	// Se não houve promoção ou se já existe um nó com a chave a ser inserida
+	if (return_value == NOPROMOTION || return_value == ERROR) {
+
+		// Libera a chave auxiliar
+		free(pag);
+		
+		// Retorna essa informação para o nível mais acima
+		return return_value;
+	}
+
+	// Se não, mas existe espaço na página atual
+	else if (pag->count < 4) {
+
+		// Shifta as keys e seus ponteiros
+		for (int i = pag->count-1; i >= pos; i--) {
+			pag->C[i+1] = pag->C[i];
+			pag->PR[i+1] = pag->PR[i];
+		}
+
+		// Insere a chave promovida e seu ponteiro no devido lugar
+		pag->C[pos] = *promo_key;
+		pag->PR[pos] = *promo_PR;
+
+		// Shifta os filhos
+		for (int i = pag->count; i >= pos+1; i--) {
+			pag->P[i+1] = pag->P[i];
+		}
+		// Insere o filho direito da chave no seu devido lugar
+		pag->P[pos+1] = *promo_r_child;
+
+		// Incrementa o número de keys da página
+		pag->count++;		
+
+		// Desloca o ponteiro para o RRN a ser escrito (o RRN atual) e então escreve
+		fseek(bin, 77*(current_rrn+1), SEEK_SET);
+		writePage(bin, pag);
+
+		// Libera a página auxiliar
+		free(pag);
+
+		return NOPROMOTION;
+	}
+
+	// Senão, significa que a página está lotada e, portanto, precisamos executar o split
+	else {
+
+		// Cria nova página 
+		page* newpage = createPage();
+
+		// E seta seu RRN (uma unidade a mais que o último RRN gerado)
+		(*last_rrn)++;
+		newpage->RRN = *last_rrn;
+
+		// Executa o algoritmo de split
+		split(pag, promo_key, promo_PR, promo_r_child, newpage);
+		
+		// Escreve a página original atualizada
+		fseek(bin, -77, SEEK_CUR);
+		writePage(bin, pag);
+
+		// Escreve a nova página no fim do arquivo
+		fseek(bin, 0, SEEK_END);
+		writePage(bin, newpage);
+
+		// Libera as páginas auxiliares
+		free(pag);
+		free(newpage);
+
+		return PROMOTION;
+	}
+
+}
+
+// Função principal de inserção de uma chave no arquivo de índice
+// |RRN| -> variável auxiliar passada por referência para manter controle dos RRNs que vão se sucedendo na árvore
+// |**root| -> ponteiro para página passado por referẽncia para atualização em caso de promoção
+void btreeInsert(FILE* bin, page** root, int key, long int PR, int* RRN) {
+
+	int promo_key; // Variável auxiliar para guardar o valor da chave promovida
+	long int promo_PR; // Variável auxiliar para guardar o valor do ponteiro de referência da chave promovida
+	int promo_r_child; // Variável auxiliar para guardar o valor do filho direito da chave promovida
+
+	// Se a raiz não existe, ou seja, a árvore está vazia
+	if (*root == NULL) {
+
+		// Criamos o nó raiz e setamos os valores passados como argumento para a função
+		*root = createPage();
+		(*root)->RRN = *RRN = 0;
+		(*root)->C[0] = key;
+		(*root)->PR[0] = PR;
+		(*root)->count = 1;
+		writePage(bin, *root);
+
+	}
+
+	// Senão, inserimos a chave e checamos se houve promoção 
+	else if (pageInsert(bin, (*root)->RRN, key, PR, &promo_r_child, &promo_key, &promo_PR, RRN) == PROMOTION) {
+		
+		// Se houve promoção, criamos a nova raiz 
+		page* newroot = createPage();
+		newroot->count = 1;
+
+		// Seu RRN é agora o mais recente da árvore
+		(*RRN) += 1; newroot->RRN = *RRN;
+		
+		// A chave e seu ponteiro são os que foram promovidos
+		newroot->C[0] = promo_key;
+		newroot->PR[0] = promo_PR;
+
+		// O filho esquerdo é a antiga raiz
+		newroot->P[0] = (*root)->RRN;
+
+		// E seu filho direito é o mesmo da chave promovida
+		newroot->P[1] = promo_r_child;
+
+		// Escreve a página nó fim do arquivo
+		fseek(bin, 0, SEEK_END);
+		writePage(bin, newroot);
+		
+		// A raiz é atualizada
+		*root = newroot;
+
+	}
+
+}
+
+// Função para buscar uma dada chave no arquivo de índice
+int searchKey(FILE* bin, int current_rrn, int key) {
+
+	// Se chegamos no fim, significa que não a chave procurada não existe
+	if (current_rrn == -1) return 0;
+
+	// Senão, criamos uma página auxiliar para ler os campos
+	page* root = createPage();
+	
+	// Variável auxiliar
+	int child;
+
+	// Deslocamos o ponteiro para o RRN da página atual e lemos os dados
+	fseek(bin, 77*(current_rrn+1), SEEK_SET);
+	readPage(bin, root);
+
+	int i;
+	// Percorremos o vetor de chaves
+	for (i = 0; i < root->count; i++) {
+
+		// Se a chave está presente, retorna que achou
+		if (root->C[i] == key) {
+
+			// Libera a página auxiliar
+			free(root);			
+			return 1;
+		}
+
+		// Se a chave atual é maior que a chave procurada, então achamos a posição correta de busca para o próximo nível 
+		else if (root->C[i] > key) {
+			break;
+		}
+	}
+
+	// Guarda o filho a ser buscado na varíavel auxiliar
+	child = root->P[i];
+
+	// Libera a página auxiliar
+	free(root);
+
+	// Busca no filho correto
+	return searchKey(bin, child, key);	
+}
+
+// Debug
+void printBTree(FILE* bin, int current_rrn) {
+
+	if (current_rrn == -1) return; 
+
+	page* root = createPage();
+	int child;
+
+	fseek(bin, 77*(current_rrn+1), SEEK_SET);
+	readPage(bin, root);
+	printPage(root);
+
+	int i;
+	for (i = 0; i < root->count+1; i++) {
+
+		child = root->P[i];
+		printBTree(bin, child);
+	
+	}
+
+	free(root);
+
+	return;
+}
+
+//-----------------------------------------------------------------------------------------------------
 
 // Cabeçalho do arquivo de veiculos, contendo seus campos
 struct cabecalhoVeiculo {
 
-	char status;
-	long int byteProxReg;
-	int nroRegistros;
-	int nroRegistrosRemovidos;
-	char descrevePrefixo[19];
-	char descreveData[36];
-	char descreveLugares[43];
-	char descreveLinha[27];
-	char descreveModelo[18];
-	char descreveCategoria[21];
+	char status; // status do arquivo de dados
+	long int byteProxReg; // byte do próximo registro a ser inserido
+	int nroRegistros; // número de registros válidos
+	int nroRegistrosRemovidos; // número de registros removidos
+
+	char descrevePrefixo[19]; // campo de referência csv
+	char descreveData[36]; // campo de referência csv
+	char descreveLugares[43]; // campo de referência csv
+	char descreveLinha[27]; // campo de referência csv 
+	char descreveModelo[18]; // campo de referência csv
+	char descreveCategoria[21]; // campo de referência csv
 };
 
 // Função que cria um ponteiro para cabeçalho de veiculo e inicializa seus campos
@@ -57,10 +492,13 @@ void descreveHeader(HeaderVeiculo* h, FILE* fp) {
 // Usada no início da funcionalidade 1, quando estamos começando a transferir os dados.
 void setHeader(HeaderVeiculo* h, FILE* binario) {
 
+	// Insere os campos utilitários do arquivo
 	fwrite(&(h->status), sizeof(char), 1, binario);
 	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
 	fwrite(&(h->nroRegistros), sizeof(int), 1, binario);
 	fwrite(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
+
+	// Insere os campos de referência do .csv
 	fwrite(h->descrevePrefixo, sizeof(char), 18, binario);
 	fwrite(h->descreveData, sizeof(char), 35, binario);
 	fwrite(h->descreveLugares, sizeof(char), 42, binario);
@@ -68,16 +506,20 @@ void setHeader(HeaderVeiculo* h, FILE* binario) {
 	fwrite(h->descreveModelo, sizeof(char), 17, binario);
 	fwrite(h->descreveCategoria, sizeof(char), 20, binario);
 
+	// Seta o byte do próximo registro (tamanho do header == 175 bytes)
 	h->byteProxReg = 175;
 }
 
 // Função que lê os campos do cabeçalho 'h' de um arquivo binario  
 void readHeaderBin(HeaderVeiculo* h, FILE* binario) {
 
+	// Lê os campos utilitários do arquivo
     fread(&(h->status), sizeof(char), 1, binario);
     fread(&(h->byteProxReg), sizeof(long int), 1, binario);
     fread(&(h->nroRegistros), sizeof(int), 1, binario);
     fread(&(h->nroRegistrosRemovidos), sizeof(int), 1, binario);
+
+    // Lê os campos de referência do .csv
     fread(h->descrevePrefixo, sizeof(char), 18, binario); 
     fread(h->descreveData, sizeof(char), 35, binario);
     fread(h->descreveLugares, sizeof(char), 42, binario);
@@ -89,8 +531,13 @@ void readHeaderBin(HeaderVeiculo* h, FILE* binario) {
 // Função que atualiza as informações do cabeçalho de um arquivo binário após a inserção dos registros
 void atualizaHeader (HeaderVeiculo* h, FILE* binario) {
 
+	// Desloca para o começo do arquivo
 	fseek(binario, 0, SEEK_SET);
+
+	// Seta o status para 1, indicando que o arquivo fechou corretamente
 	h->status = '1';
+
+	// Escreve os campos utilitários
 	fwrite(&(h->status), sizeof(char), 1, binario);
 	fwrite(&(h->byteProxReg), sizeof(long int), 1, binario);
 	fwrite(&(h->nroRegistros), sizeof(int), 1, binario);
@@ -103,19 +550,21 @@ void liberaHeader(HeaderVeiculo* h) {
     if (h != NULL) free(h);
 }
 
+//---------------------------------------------------------------------------------------------------------
+
 // Struct do registro veículo, contendo seus campos
 struct registroVeiculo {
 
-	char prefixo[6];
-	char data[11];
-	int quatidadeLugares;
-	int codLinha;
-	char* modelo;
-	char* categoria;
-	char removido;
-	int tamanhoRegistro;
-	int tamanhoModelo;
-	int tamanhoCategoria;
+	char prefixo[6]; // prefixo do veículo
+	char data[11]; // data de entrada do veículo na frota
+	int quatidadeLugares; // quantidade de lugares no veículo
+	int codLinha; // código de linha do veículo
+	char* modelo; // modelo do veículo (tamanho variável)
+	char* categoria; // categoria do veículo (tamanho variável)
+	char removido; // campo que indica se o registro está removido ou não
+	int tamanhoRegistro; // tamanho do registro no arquivo de dados
+	int tamanhoModelo; // tamanho do campo 'modelo'
+	int tamanhoCategoria; // tamanho do campo 'categoria'
 };
 
 // Função que cria um ponteiro para veículo 'v', já inicializando seus campos
@@ -130,13 +579,67 @@ RegistroVeiculo* create() {
 	v->tamanhoRegistro = 0;
 	v->tamanhoModelo = 0;
 	v->tamanhoCategoria = 0;
+
 	return v;
+}
+
+int convertePrefixo(char* str) {
+
+    /* O registro que tem essa string como chave foi removido */
+    if(str[0] == '*')
+        return -1;
+
+    /* Começamos com o primeiro digito na ordem de 36^0 = 1 */
+    int power = 1;
+
+    /* Faz a conversão char por char para chegar ao resultado */
+    int result = 0;
+    for(int i = 0; i < 5; i++) {
+
+        /* 
+            Interpreta o char atual como se fosse um digito
+            em base 36. Os digitos da base 36 são:
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D,
+            E, F, G, H, I, J, K, L, M, N, O, P, Q, R,
+            S, T, U, V, W, X, Y, Z
+        */
+        int cur_digit;
+        /* Checa pelos digitos normais e os converte para números */
+        if(str[i] >= '0' && str[i] <= '9')
+            cur_digit = str[i] - '0';
+        /* Checa pelas letras e as converte para números */
+        else if(str[i] >= 'A' && str[i] <= 'Z')
+            cur_digit = 10 + str[i] - 'A';
+
+        /*
+            Multiplica o digito atual pelo ordem da posição atual
+            e adiciona no resultado
+            Primeira posição:   36^0 = 1
+            Segunda posição:    36^1 = 36
+            Terceira posição:   36^2 = 1.296
+            Quarta posição:     36^3 = 46.656
+            Quinta posição:     36^4 = 1.679.616
+        */
+        result += cur_digit * power;
+
+        /* Aumenta a ordem atual */
+        power *= 36;
+
+    }
+
+    return result;
+
+}
+
+int getPrefix(RegistroVeiculo* v) {
+	return convertePrefixo(v->prefixo);
 }
 
 // Função auxiliar para tratar o caso de registros removidos (com prefixo começando por *)
 void solveRemoved(char* prefix) {
 	int tam = strlen(prefix);
 
+	// Desloca as letras para sobrescrever o asterisco
 	for (int i = 0; i < tam-1; i++) {
 		prefix[i] = prefix[i+1];
 	}
@@ -154,21 +657,25 @@ void setVeiculo(RegistroVeiculo* v, char* prefixo, char* data, int lug, int codl
     v->modelo = (char*)malloc(sizeof(char)*strlen(modelo)+1);
     strcpy(v->modelo, modelo);
     v->modelo[strlen(modelo)] = '\0';
+    v->tamanhoModelo = strlen(v->modelo);
 
     v->categoria = (char*)malloc(sizeof(char)*strlen(categoria)+1);
     strcpy(v->categoria, categoria);
     v->categoria[strlen(categoria)] = '\0';
+    v->tamanhoCategoria = strlen(v->categoria);
 
 }
 
 // Função que lê os campos de um veículo a partir de um arquivo .csv
 int leitura (FILE* fp, RegistroVeiculo* v) {
 
-    char lixo[5];
+    char lixo[5]; // Variável auxiliar para controle dos dados de leitura
+
     fscanf(fp, "%[^,],", v->prefixo);
     fscanf(fp, "%[^,],", v->data);
     
     fscanf(fp, "%[^,],", lixo);
+
     // Se há NULO no lugar do campo, ele recebe -1
     if (strcmp(lixo, "NULO") == 0) v->quatidadeLugares = -1;
     else {
@@ -176,6 +683,7 @@ int leitura (FILE* fp, RegistroVeiculo* v) {
     }
 
     fscanf(fp, "%[^,],", lixo);
+
     // Se há NULO no lugar do campo, ele recebe -1
     if (strcmp(lixo, "NULO") == 0) v->codLinha = -1;
     else {
@@ -191,9 +699,9 @@ int leitura (FILE* fp, RegistroVeiculo* v) {
 // Função que escreve os campos de um dado registro 'v' num arquivo binario, a partir do byte 'byteProxReg'
 int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) {
 
-    int flagm = 0;
-    int flagc = 0;
-    int tam = 31;
+    int flagm = 0; // Flag que indica se o campo 'modelo' é nulo ou não
+    int flagc = 0; // Flag que indica se o campo 'categoria' é nulo ou não
+    int tam = 31; // Tamanho do registro
 
     // Se há NULO, marcamos isso para usar no código mais à frente
     if (strcmp(v->modelo, "NULO") == 0) {
@@ -217,13 +725,17 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
     // Desloca-se o ponteiro para o byte em que começaremos a inserir
     fseek(binario, byteProxReg, SEEK_SET);
 
+    // Escreve o campo 'removido', o tamanho do registro e seu prefixo
     fwrite(&(removido), sizeof(char), 1, binario);
     fwrite(&(tam), sizeof(int), 1, binario);
     fwrite(v->prefixo, sizeof(char), 5, binario);
 
-    // A partir daqui começam as verificações de validade ou não dos campos,
-    // por isso as flags marcadas anteriormente
+    // --------- A partir daqui começam as verificações de validade ou não dos campos ------
+
+    // Se campo 'data' é 'NULO'
     if (v->data[0] == 'N') {
+
+    	// Escreve "\0@@@@..."
 
         char lixo = '\0';
         fwrite(&lixo, sizeof(char), 1, binario);
@@ -233,15 +745,17 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
             fwrite(&lixo, sizeof(char), 1, binario); 
         }
 
-    } else {
+    } else { // Se não, escreve a data de entrada
         fwrite(v->data, sizeof(char), strlen(v->data), binario); 
     }
 
     fwrite(&(v->quatidadeLugares), sizeof(int), 1, binario);
-
     fwrite(&(v->codLinha), sizeof(int), 1, binario); 
 
+    // Se o modelo é nulo
     if (flagm == 1) {
+
+    	// O tamanho do campo recebe 0 e não escreve o modelo
         int tam = 0;
         fwrite(&tam, sizeof(int), 1, binario);
     } else {
@@ -250,7 +764,10 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
         fwrite(v->modelo, sizeof(char), v->tamanhoModelo, binario); 
     }
 
+    // Se a categoria é nula
     if (flagc == 1) {
+
+    	// O tamanho do campo recebe 0 e não escreve a categoria
         int tam = 0;
         fwrite(&tam, sizeof(int), 1, binario);
     } else {
@@ -268,21 +785,38 @@ int escrita (RegistroVeiculo* v, char removido, int byteProxReg, FILE* binario) 
 // Função maior de escrita no arquivo binário. Usa como base a função 'escrita' anterior.
 void atualizaBinario(HeaderVeiculo* h, RegistroVeiculo* v, FILE* binario) {
 
+	// Variáveis auxiliares
 	int tam;
 	char removido;
 
+	// Se o registro foi removido
 	if (v->prefixo[0] == '*') {
+
+		// Corrige o prefixo
 		solveRemoved(v->prefixo);
+
+		// Incrementa o número de registros removidos
 		h->nroRegistrosRemovidos++;
+
+		// Atualiza o campo removido do registro
 		removido = '0'; 
 	}
+	
+	// Se o registro é válido
 	else  {
+
+		// Incrementa o número de registros válidos
 		h->nroRegistros++;
+
+		// Atualiza o campo removido do registro
 		removido = '1';
 	}
 
+	// Escreve o registro com seu estado de remoção e recebe de volta 
+	// o tamanho do registro completo (contendo 'removido' e 'tamanho do registro')
 	tam = escrita(v, removido, h->byteProxReg, binario);
 
+	// Atualiza o byte do próximo registro a ser inserido
 	h->byteProxReg = h->byteProxReg + tam;
 	
 }
