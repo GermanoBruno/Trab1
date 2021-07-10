@@ -2,9 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define ERROR -1 		// valor de retorno da função pageInsert quando já existe um elemento a ser inserido
-#define PROMOTION 1 	// valor de retorno da função pageInsert quando uma chave é promovida
-#define NOPROMOTION 0 	// valor de retorno da função pageInsert quando não há promoção
 // Estrutura da página de disco
 struct PAGE {
 
