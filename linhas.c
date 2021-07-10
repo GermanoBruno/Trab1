@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "linhas.h"
 #include "auxiliares.h"
+#include "btree.h"
 
 // Structs
 	struct registroLinha
@@ -34,7 +35,6 @@
 		char 	 descreveNome[14];		// 13 bytes
 		char 	 descreveCor[25]; 		// 24 bytes
 	};
-
 
 // Cabeçalho
 	HeaderLinha* criarHeaderLinha(){
@@ -524,147 +524,3 @@
 
 		reg->tamanhoRegistro = 13 + reg->tamanhoCor + reg->tamanhoNome;
 	}
-
-// Funcionalidades
-	void funcionalidade2(FILE* fpCsv, FILE* fpBin){
-		// Escrita dos registros num binario
-
-		// Cria as structs
-		HeaderLinha* h  = criarHeaderLinha();
-		RegistroLinha* reg = criaRegistroLinha();
-		if(DEBUG){
-			printf("Func2 criou structs\n\n");
-		}
-
-		// Le e escreve o cabecalho
-		leituraCabecalhoLinhaCsv(h, fpCsv);
-		escritaCabecalhoLinha(h, fpBin);
-		if(DEBUG){
-			printf("Func2 leu e escreveu o cabecalho\n\n");
-		}
-
-		// Le e escreve cada registro
-		while(checkFile(fpCsv)){
-			leRegistroLinhaCsv(reg, fpCsv);
-			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			liberaRegistroLinha(reg);			
-			reg = criaRegistroLinha();
-		}
-		atualizaHeaderLinha(h, fpBin);
-		liberaCabecalhoLinha(h);
-		liberaRegistroLinha(reg);
-
-		if(DEBUG){
-			printf("Func2 terminou\n\n");
-		}
-	}
-
-	void funcionalidade4(FILE* fpBin){
-		// Le o arquivo binario e imprime todos os registros não removidos
-
-	 	RegistroLinha* reg = criaRegistroLinha();
-	 	HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
-	 	if(h->status == '0'){
-	 		// verificacao de status
-			printf("Falha no processamento do arquivo.\n");
-			liberaCabecalhoLinha(h);
-			liberaRegistroLinha(reg);
-			return;
-
-		}
-	 	if(DEBUG){
-			printf("Func4 criou struct\n");
-		}	
-		if(h->nroRegistros == 0){
-			// Se não houver registros, não tem o que imprimir
-			printf("Registro inexistente.\n");
-			liberaCabecalhoLinha(h);
-			liberaRegistroLinha(reg);
-			return;
-		}
-		while(checkFile(fpBin)){
-			// Se o arquivo não terminou, le os registros e imprime
-			leRegistroLinha(reg, fpBin);
-			imprimeRegistroLinha(reg);
-			liberaRegistroLinha(reg);
-			reg = criaRegistroLinha();
-
-		}
-		atualizaHeaderLinha(h, fpBin);
-		liberaCabecalhoLinha(h);
-		liberaRegistroLinha(reg);
-		if(DEBUG){
-			printf("Func4 terminou\n");
-		}
-	}
-
-	void funcionalidade6(FILE* fpBin, char* nomeDoCampo, char* valor){
-		// Verifica qual o nome do campo buscado e chama a funcao 
-		// correspondente à essa busca
-
-		if(strcmp("aceitaCartao", nomeDoCampo) == 0){
-			buscaCartao(fpBin, valor);
-		}else if(strcmp("nomeLinha", nomeDoCampo) == 0){
-			buscaNome(fpBin, valor);
-		}else if(strcmp("corLinha", nomeDoCampo) == 0){
-			buscaCor(fpBin, valor);
-		}else if(strcmp("codLinha", nomeDoCampo) == 0){
-			buscaCodigo(fpBin, valor);
-		}
-	}
-
-	int funcionalidade8(FILE* fpBin, int qtdRegistros){
-		// Le os registros e os adiciona no arquivo binario
-
-		RegistroLinha* reg = criaRegistroLinha();
-		HeaderLinha* h = leituraCabecalhoLinhaBinario(fpBin);
-		if(h->status == '0'){
-			// verificacao de status
-			printf("Falha no processamento do arquivo.\n");
-			liberaRegistroLinha(reg);
-			liberaCabecalhoLinha(h);
-			return 0;
-		}
-
-		int cod = 0;
-		char codNaoTratado[5];
-		char cartao[1];
-		char nome[100];
-		char cor[100];
-
-		for(int i = 0; i < qtdRegistros; i++){
-			scanf("%s ", codNaoTratado);
-
-			// Tratamento de registro removido
-			if(codNaoTratado[0] == '*'){
-				reg->removido = '0';
-				codNaoTratado[0] = codNaoTratado[1];
-				codNaoTratado[1] = codNaoTratado[2];
-				codNaoTratado[2] = '\0';
-			}else{
-				reg->removido = '1';
-			}
-			cod = atoi(codNaoTratado);
-
-			scan_quote_string(cartao);
-			scan_quote_string(nome);
-			scan_quote_string(cor);
-
-			setRegistroLinha(reg, cod, cartao[0], nome, cor);
-
-			//int tamBonus = escreveRegistroLinha(reg, h->byteProxReg, fpBin);
-			//h->byteProxReg += escreveRegistroLinha(reg, h->byteProxReg, fpBin);
-			atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-			//atualizaHeaderLinha(h, fpBin);
-			liberaRegistroLinha(reg);
-			reg = criaRegistroLinha();
-
-		}
-		//atualizaCabecalhoBinarioLinha(h, reg, fpBin);
-		atualizaHeaderLinha(h, fpBin);
-		liberaRegistroLinha(reg);
-		liberaCabecalhoLinha(h);
-
-		return 1;
-	}
-

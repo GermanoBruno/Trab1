@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "linhas.h"
-#include "veiculo.h"
-#include "auxiliares.h"
+#include "funcionalidades.h"
 
 int main(int argc, char const *argv[])
 {
 	int opNum;
 	char nomeArquivoCsv[20];
 	char nomeArquivoBinario[20];
+	char nomeArquivoIndex[20];
 	FILE* fpCsv;
 	FILE* fpBin;
+	FILE* fpIndex;
 	int qtdRegistros;
 	char nomeDoCampo[17];
 	char valor[100];
@@ -169,6 +169,54 @@ int main(int argc, char const *argv[])
 			// binario na tela
 
 			break;
+		case 9:
+		case 10:
+			scanf("%s %s", nomeArquivoBinario, nomeArquivoIndex);
+
+			fpBin = fopen(nomeArquivoBinario, "rb");
+			fpIndex = fopen(nomeArquivoIndex, "wb+");
+
+			if((fpIndex == NULL) || (fpBin == NULL)){
+				printf("Falha no processamento do arquivo.\n");
+				return 0;
+			}
+			funcionalidade10(nomeArquivoBinario, nomeArquivoIndex);
+			fclose(fpBin);
+			fclose(fpIndex);
+			binarioNaTela(nomeArquivoIndex);
+			break;
+		case 11:
+			break;
+		case 12:
+			scanf("%s %s", nomeArquivoBinario, nomeArquivoIndex);
+			fpBin = fopen(nomeArquivoBinario, "rb");
+			fpIndex = fopen(nomeArquivoIndex, "wb+");
+
+			if((fpIndex == NULL) || (fpBin == NULL)){
+				printf("Falha no processamento do arquivo.\n");
+				return 0;
+			}
+			funcionalidade12(nomeArquivoBinario, nomeArquivoIndex);
+			fclose(fpBin);
+			fclose(fpIndex);
+			break;
+		case 13:
+			break;
+		case 14:
+			scanf("%s %s %d", nomeArquivoBinario, nomeArquivoIndex, &qtdRegistros);
+			fpBin = fopen(nomeArquivoBinario, "rb");
+			fpIndex = fopen(nomeArquivoIndex, "wb+");
+
+			if((fpIndex == NULL) || (fpBin == NULL)){
+				printf("Falha no processamento do arquivo.\n");
+				return 0;
+			}
+			funcionalidade14(nomeArquivoBinario, nomeArquivoIndex, qtdRegistros);
+			fclose(fpBin);
+			fclose(fpIndex);
+			binarioNaTela(nomeArquivoIndex);
+			break;
+
 		default:
 			// Erro de entrada
 			break;

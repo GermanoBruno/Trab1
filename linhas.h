@@ -21,8 +21,6 @@ void liberaCabecalhoLinha(HeaderLinha* h);
 
 void printDebugCabecalhoLinha(HeaderLinha* h);
 
-	// DEBUG PRINT
-	///////////////////////////////////////////////////////////////////////
 // Registros
 	
 RegistroLinha* criaRegistroLinha(void);
@@ -32,23 +30,12 @@ void liberaRegistroLinha(RegistroLinha* reg);
 void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp);
 void imprimeRegistroLinha(RegistroLinha* reg);
 int escreveRegistroLinha(RegistroLinha* reg, int byteProxReg, FILE* fp);
-// AINDA NÃO TERMINEI A PARTIR DAQUI
 int leRegistroLinha(RegistroLinha* reg, FILE* fp);
 void buscaRegistroLinha(FILE* fp);
-
-//////////////////////////////////////////////////////////////////////////
-///// Escrita e busca tão copiados do veiculos pra referencia rapida /////
-//////////////////////////////////////////////////////////////////////////
-
 
 // DEBUG PRINT
 void printDebugRegistroLinha(RegistroLinha* reg);
 
 int checkFile(FILE* fp); 
-// Funcionalidades
-void funcionalidade2(FILE* fpCsv, FILE* fpBin);
-void funcionalidade4(FILE* fpBin);
-void funcionalidade6(FILE* fpBin, char nomeDoCampo[17], char valor[100]);
-int funcionalidade8(FILE* fpBin, int qtdRegistros);
 
 #endif
