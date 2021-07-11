@@ -27,6 +27,7 @@ RegistroLinha* criaRegistroLinha(void);
 
 int leRegistroLinhaCsv(RegistroLinha* reg, FILE* fp);
 void liberaRegistroLinha(RegistroLinha* reg);
+void atualizaHeaderLinha (HeaderLinha* h, FILE* binario);
 void atualizaCabecalhoBinarioLinha(HeaderLinha* h, RegistroLinha* reg, FILE* fp);
 void imprimeRegistroLinha(RegistroLinha* reg);
 int escreveRegistroLinha(RegistroLinha* reg, int byteProxReg, FILE* fp);
@@ -37,5 +38,16 @@ void buscaRegistroLinha(FILE* fp);
 void printDebugRegistroLinha(RegistroLinha* reg);
 
 int checkFile(FILE* fp); 
+
+void buscaCartao(FILE* fp, char* valor);
+
+void buscaNome(FILE* fp, char* valor);
+
+void buscaCodigo(FILE* fp, char* valor);
+
+void buscaCor(FILE* fp, char* valor);
+
+void setRegistroLinha(RegistroLinha* reg, int cod, char cartao, char* nome, char* cor);
+
 
 #endif

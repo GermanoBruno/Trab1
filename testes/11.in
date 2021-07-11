@@ -1,1 +1,5 @@
-6 testes/linha11.bin codLinha 520
+14 testes/linha16.bin testes/indicePrefixo16.bin 4
+691 "S" "CAXIMBA-OLARIA" "LARANJA"
+919 "N" "SITIO CERCADO (HORARIO)" "VERDE"
+990 NULO "JOSE CULPI-VENEZA" "TURISMO"
+950 "F" NULO "VERMELHA"
